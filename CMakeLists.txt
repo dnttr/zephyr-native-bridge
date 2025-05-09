@@ -45,6 +45,7 @@ add_library(znb SHARED ${SOURCE_FILES})
 target_include_directories(znb PUBLIC
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/cpp/include
 )
 
 # Prepare project dependencies

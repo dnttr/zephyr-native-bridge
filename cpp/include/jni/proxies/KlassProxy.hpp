@@ -42,4 +42,9 @@ public:
             klass = nullptr;
         }
     }
+
+    [[nodiscard]] jclass get_klass() const
+    {
+        return klass;
+    }
 };
