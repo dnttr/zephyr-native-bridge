@@ -1,8 +1,8 @@
 [package]
-name = "zephyr-native-bridge"
+name = "znb"
 version = "0.1.0"
 edition = "2024"
 
 [lib]
-name = "zephyr_native_bridge"
+name = "znb"
 crate-type = ["cdylib"]
