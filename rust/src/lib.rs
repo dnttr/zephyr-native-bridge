@@ -1,4 +1,5 @@
-#[unsafe(no_mangle)]
-pub extern "C" fn test(a: i32, b: i32) -> i32 {
-    a + b
+fn x() {
+    // This is a placeholder function.
+    // It does nothing.
+    // It is here to make the Rust compiler happy.
 }

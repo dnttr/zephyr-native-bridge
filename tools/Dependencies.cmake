@@ -8,7 +8,7 @@ function(_prepare_test_lib)
     endif ()
 
     message(STATUS "Found Catch2.")
-    target_include_directories(znb PRIVATE ${Catch2_INCLUDE_DIRS})
+    target_include_directories(znb_tests PRIVATE ${Catch2_INCLUDE_DIRS})
 
     include(CTest)
     include(Catch)
@@ -37,10 +37,15 @@ function(_prepare_jvm_toolset)
         message(FATAL_ERROR "JNI OS specific header not found.")
     endif ()
 
-    target_include_directories(znb PRIVATE ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC})
+    target_include_directories(znb_tests PRIVATE ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC})
 endfunction()
 
 function(prepare_dependencies)
+    set(JNI_LIB ${JNI_LIBRARIES})
+    set(CATCH_2_LIB Catch2::Catch2)
+
+    set(LIB_LIST ${JNI_LIB} ${CATCH_2_LIB} PARENT_SCOPE)
+
     _prepare_test_lib()
     _prepare_jvm_toolset()
 endfunction()

@@ -7,13 +7,13 @@
 #include <jni.h>
 #include <string>
 
-class KlassProxy
+class klass_proxy
 {
     JNIEnv *env;
     jclass klass;
 public:
 
-    KlassProxy(JNIEnv *env, const std::string &klass_name): env(env)
+    klass_proxy(JNIEnv *env, const std::string &klass_name): env(env)
     {
         if (env == nullptr || klass_name.empty())
         {
@@ -34,7 +34,7 @@ public:
         env->NewLocalRef(klass);
     }
 
-    ~KlassProxy()
+    ~klass_proxy()
     {
         if (klass != nullptr && env != nullptr)
         {

@@ -9,18 +9,19 @@
 #include <string>
 #include <vector>
 
-#include "jni/proxies/KlassProxy.hpp"
+#include "jni/proxies/klass_proxy.hpp"
 
-class MethodProxy
+class method_proxy
 {
     JNIEnv *env;
     jmethodID identity;
 
-    std::unique_ptr<KlassProxy> owner;
-
     std::string name;
     std::string signature;
+
+    std::unique_ptr<klass_proxy> owner;
     std::vector<std::string> parameters;
+
     bool is_static;
 
     [[nodiscard]] jmethodID build_identity() const
@@ -37,39 +38,40 @@ class MethodProxy
     }
 public:
 
-    MethodProxy(JNIEnv *env, std::unique_ptr<KlassProxy> owner, std::string &name, std::string &signature, std::vector<std::string> parameters, const bool is_static)
+    method_proxy(JNIEnv *env, std::unique_ptr<klass_proxy> owner, std::string &name, std::string &signature, std::vector<std::string> parameters, const bool is_static)
         :
         env(env),
-        owner(std::move(owner)),
         name(std::move(name)),
         signature(std::move(signature)),
+        owner(std::move(owner)),
         parameters(std::move(parameters)),
         is_static(is_static)
     {
         identity = build_identity();
     }
 
-    explicit MethodProxy(nullptr_t) = delete;
+    explicit method_proxy(nullptr_t) = delete;
 
-    MethodProxy(const MethodProxy &) = delete;
-    MethodProxy &operator=(const MethodProxy &) = delete;
+    method_proxy(const method_proxy &) = delete;
+    method_proxy &operator=(const method_proxy &) = delete;
 
-    MethodProxy(MethodProxy &&other) noexcept
+    method_proxy(method_proxy &&other) noexcept
         :
         env(other.env),
         identity(other.identity),
-        owner(std::move(other.owner)),
         name(std::move(other.name)),
         signature(std::move(other.signature)),
+        owner(std::move(other.owner)),
         parameters(std::move(other.parameters)),
         is_static(other.is_static)
     {
     }
 
-    MethodProxy &operator=(MethodProxy &&other) noexcept
+    method_proxy &operator=(method_proxy &&other) noexcept
     {
         if (this != &other)
         {
+            env = other.env;
             identity = other.identity;
             owner = std::move(other.owner);
             name = std::move(other.name);

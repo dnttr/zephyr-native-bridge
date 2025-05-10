@@ -32,7 +32,7 @@ function(define_platform)
     _define_os()
 
     if (APPLE)
-        set(OUTPUT_EXTENSION_NAME "dylib")
+        set(OUTPUT_EXTENSION_NAME "a")
     elseif(UNIX)
         set(OUTPUT_EXTENSION_NAME "so")
     endif()
