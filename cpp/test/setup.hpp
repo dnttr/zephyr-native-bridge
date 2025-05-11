@@ -8,10 +8,9 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "debug/vm_dynamic_util.hpp"
-#include "debug/vm_object.hpp"
+#include "vm_object.hpp"
 
-inline vm_object *vm = nullptr;
+inline std::unique_ptr<vm_object> vm = nullptr;
 
 inline vm_object *get_vm()
 {
@@ -20,5 +19,5 @@ inline vm_object *get_vm()
         throw std::runtime_error("vm not initialized");
     }
 
-    return vm;
+    return vm.get();
 }

@@ -1,7 +1,8 @@
 #include <iostream>
 
 #include "cpp/test/setup.hpp"
-#include "debug/vm_dynamic_util.hpp"
+
+#include "vm_management.hpp"
 
 int main(const int argc, char* argv[]) {
     Catch::Session session;
@@ -9,9 +10,7 @@ int main(const int argc, char* argv[]) {
     std::cout << "--------" << "running tests" << "--------" << std::endl;
     std::cout << "Executing vm_dynamic_util -> initialize_vm" << std::endl;
 
-    vm_dynamic_util vm_util;
-
-    vm = vm_util.initialize_vm(ZNI_DST);
+    vm = vm_management::create_and_wrap_vm(ZNI_DST);
 
     return session.run(argc, argv);
 }

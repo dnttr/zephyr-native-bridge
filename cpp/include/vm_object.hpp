@@ -9,18 +9,20 @@
 
 class vm_object {
 
-    JavaVM *vm;
-    jvmtiEnv *jvmti;
-    JNIEnv *env;
+    JavaVM *jvm;
+    std::optional<jvmtiEnv *> jvmti;
+    JNIEnv *jni;
 
+    int version;
 public:
 
-    vm_object(JavaVM *vm, jvmtiEnv *jvmti, JNIEnv *env):
-        vm(vm),
+    vm_object(const int version, JavaVM *jvm, const std::optional<jvmtiEnv *> jvmti, JNIEnv *jni):
+        version(version),
+        jvm(jvm),
         jvmti(jvmti),
-        env(env)
+        jni(jni)
     {
-        if (vm == nullptr || jvmti == nullptr || env == nullptr)
+        if (jvm == nullptr || jni == nullptr)
         {
             throw std::invalid_argument("vm, jvmti or env is null");
         }
@@ -28,24 +30,24 @@ public:
 
     [[nodiscard]] jvmtiEnv *get_jvmti() const
     {
-        return jvmti;
+        return jvmti.value_or(nullptr);
     }
 
     [[nodiscard]] JavaVM *get_vm() const
     {
-        return vm;
+        return jvm;
     }
 
     [[nodiscard]] JNIEnv *get_env() const
     {
         JNIEnv *env = nullptr;
 
-        if (const jint res = vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_21); res == JNI_EDETACHED)
+        if (const jint res = jvm->GetEnv(reinterpret_cast<void **>(&env), version); res == JNI_EDETACHED)
         {
             JavaVMAttachArgs vm_attach_args;
-            vm_attach_args.version = JNI_VERSION_21;
+            vm_attach_args.version = version;
 
-            if (vm->AttachCurrentThread(reinterpret_cast<void **>(&env), &vm_attach_args) != JNI_OK)
+            if (jvm->AttachCurrentThread(reinterpret_cast<void **>(&env), &vm_attach_args) != JNI_OK)
             {
                 throw std::runtime_error("failed to attach vm thread");
             }
@@ -59,10 +61,10 @@ public:
 
     ~vm_object()
     {
-        if (vm != nullptr)
+        if (jvm != nullptr)
         {
-            vm->DestroyJavaVM();
-            vm = nullptr;
+            jvm->DestroyJavaVM();
+            jvm = nullptr;
         }
     }
 };
