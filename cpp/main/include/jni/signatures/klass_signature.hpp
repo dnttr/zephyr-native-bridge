@@ -7,7 +7,7 @@
 #include <jni.h>
 #include <string>
 
-#include "jni/utils/Util.hpp"
+#include "jni/utils/util.hpp"
 
 class klass_signature
 {

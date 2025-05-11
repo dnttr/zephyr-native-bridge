@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "jni/signatures/method/method_signature.hpp"
-#include "jni/utils/Util.hpp"
+#include "jni/utils/util.hpp"
 
 class jvmti_object
 {
