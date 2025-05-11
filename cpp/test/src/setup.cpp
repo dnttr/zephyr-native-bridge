@@ -1,14 +1,13 @@
 #include <iostream>
 
-#include "cpp/test/setup.hpp"
+#include "cpp/test/include/setup.hpp"
 
 #include "vm_management.hpp"
 
 int main(const int argc, char* argv[]) {
     Catch::Session session;
 
-    std::cout << "--------" << "running tests" << "--------" << std::endl;
-    std::cout << "Executing vm_dynamic_util -> initialize_vm" << std::endl;
+    std::cout << "--------" << "> Running tests <" << "--------" << std::endl;
 
     vm = vm_management::create_and_wrap_vm(ZNI_DST);
 

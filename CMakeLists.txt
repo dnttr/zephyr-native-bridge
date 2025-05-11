@@ -15,8 +15,7 @@ set(SOURCE_FILES
 )
 
 set(TEST_FILES
-        ${CMAKE_SOURCE_DIR}/cpp/test/setup.cpp
-        ${CMAKE_SOURCE_DIR}/cpp/test/test_main.cpp
+        ${CMAKE_SOURCE_DIR}/cpp/test/src/setup.cpp
 )
 
 set(ZNI_DST "${CMAKE_SOURCE_DIR}/external/zephyr-native-interface.jar")
@@ -28,8 +27,8 @@ else()
 endif ()
 
 configure_file(
-        ${CMAKE_SOURCE_DIR}/cpp/test/setup.hpp
-        ${CMAKE_BINARY_DIR}/cpp/test/setup.hpp
+        ${CMAKE_SOURCE_DIR}/cpp/test/include/setup.hpp
+        ${CMAKE_BINARY_DIR}/cpp/test/include/setup.hpp
         @ONLY
 )
 
@@ -60,16 +59,25 @@ add_custom_command(
 )
 add_custom_target(rust_znb DEPENDS ${RUST_DST})
 
-# Collect test sources
-file(GLOB_RECURSE TEST_SOURCES "${CMAKE_SOURCE_DIR}/cpp/tests/*.cpp")
+file(GLOB_RECURSE TEST_LIST "${CMAKE_SOURCE_DIR}/cpp/test/src/impl/*.cpp")
+
+if(TEST_LIST)
+    message(STATUS "Found test files:")
+    foreach(file ${TEST_LIST})
+        message(STATUS "  ${file}")
+    endforeach()
+else()
+    message(WARNING "No test files found in ${CMAKE_SOURCE_DIR}/cpp/test/src/impl/")
+endif()
 
 # Create Catch2-based test executable
-add_executable(znb_tests ${TEST_FILES})
+add_executable(znb_tests ${TEST_FILES} ${TEST_LIST})
 prepare_dependencies()
 add_dependencies(znb_tests rust_znb)
 target_include_directories(znb_tests PUBLIC
         ${CMAKE_BINARY_DIR}
-        ${CMAKE_SOURCE_DIR}/cpp/include
+        ${CMAKE_SOURCE_DIR}/cpp/main/include
+        ${CMAKE_SOURCE_DIR}/cpp/test/include
 )
 target_link_libraries(znb_tests PRIVATE ${LIB_LIST} ${RUST_DST})
 

@@ -5,35 +5,39 @@
 #pragma once
 
 #include <jni.h>
-#include <jvmti.h>
+#include <optional>
+#include <stdexcept>
+
+#include "jvmti/jvmti_object.hpp"
 
 class vm_object {
-
     JavaVM *jvm;
-    std::optional<jvmtiEnv *> jvmti;
+    std::optional<jvmti_object> jvmti;
     JNIEnv *jni;
 
     int version;
 public:
-
-    vm_object(const int version, JavaVM *jvm, const std::optional<jvmtiEnv *> jvmti, JNIEnv *jni):
+    vm_object(const int version, JavaVM *jvm, jvmtiEnv *jvmti_env, JNIEnv *jni):
         version(version),
         jvm(jvm),
-        jvmti(jvmti),
         jni(jni)
     {
         if (jvm == nullptr || jni == nullptr)
         {
-            throw std::invalid_argument("vm, jvmti or env is null");
+            throw std::invalid_argument("vm or env is null");
+        }
+        
+        if (jvmti_env != nullptr) {
+            jvmti.emplace(jvmti_env);
         }
     }
 
-    [[nodiscard]] jvmtiEnv *get_jvmti() const
+    [[nodiscard]] jvmti_object* get_jvmti() const
     {
-        return jvmti.value_or(nullptr);
+        return jvmti.has_value() ? const_cast<jvmti_object*>(&jvmti.value()) : nullptr;
     }
 
-    [[nodiscard]] JavaVM *get_vm() const
+    [[nodiscard]] JavaVM *get_owner() const
     {
         return jvm;
     }

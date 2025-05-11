@@ -51,21 +51,34 @@ public:
 
     static std::unique_ptr<vm_object> create_and_wrap_vm(const vm_data &vm_data, const std::optional<jvmti_data> jvmti_data)
     {
+        std::cout << "Beginning initialization of vm." << std::endl;
         const auto [jvm, jni] = create_vm(vm_data);
 
         jvmtiEnv *jvmti = nullptr;
+        std::cout << "------------------------------" << std::endl;
+
         if (jvmti_data.has_value())
         {
+            std::cout << "JVMTI initialization requested." << std::endl;
             const auto data = jvmti_data.value();
 
             jvmti = get_jvmti(jvm, data.version);
 
             const auto capabilities = get_capabilities(jvmti, data);
+
+            std::cout << "JVMTI capabilities requested." << std::endl;
+
             if (jvmti->AddCapabilities(&capabilities) != JVMTI_ERROR_NONE)
             {
-                throw std::runtime_error("failed to add jvmti capabilities");
+                throw std::runtime_error("Failed to add jvmti capabilities.");
             }
+
+            std::cout << "JVMTI capabilities added." << std::endl;
+            std::cout << "JVMTI initialization completed." << std::endl;
+            std::cout << "------------------------------" << std::endl;
         }
+
+        std::cout << "Finished initialization of vm." << std::endl;
 
         return std::make_unique<vm_object>(vm_data.version, jvm, jvmti, jni);
     }
@@ -74,7 +87,7 @@ private:
     {
         if (jvmti == nullptr)
         {
-            throw std::invalid_argument("jvmti is null");
+            throw std::invalid_argument("JVMTI is null.");
         }
 
         jvmtiCapabilities capabilities = {};
@@ -97,16 +110,21 @@ private:
 
         if (use_classpath)
         {
+            std::cout << "------------------------------" << std::endl;
+            std::cout << "Requesting file class loading." << std::endl;
+
             const auto classpath = vm_data.classpath.value();
 
             if (classpath.empty() || !std::filesystem::exists(classpath))
             {
-                throw std::invalid_argument("Unable to determine classpath");
+                throw std::invalid_argument("Unable to determine classpath.");
             }
 
             classpath_option = "-Djava.class.path=" + classpath;
 
             options[0].optionString = const_cast<char *>(classpath_option.c_str());
+
+            std::cout << "Loaded classes from: " << classpath << "." << std::endl;
         }
 
         vm_args.version = vm_data.version;
@@ -119,7 +137,7 @@ private:
 
         if (JNI_CreateJavaVM(&jvm, reinterpret_cast<void **>(&jni), &vm_args) != JNI_OK)
         {
-            throw std::runtime_error("failed to initialize vm");
+            throw std::runtime_error("Failed to initialize vm.");
         }
 
         return std::make_pair(jvm, jni);
@@ -130,7 +148,7 @@ private:
         jvmtiEnv *jvmti = nullptr;
         if (vm->GetEnv(reinterpret_cast<void **>(&jvmti), version) != JNI_OK)
         {
-            throw std::runtime_error("failed to get jvmtiEnv");
+            throw std::runtime_error("Failed to get jvmti.");
         }
 
         return jvmti;

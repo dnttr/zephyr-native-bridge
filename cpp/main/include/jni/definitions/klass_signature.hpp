@@ -7,13 +7,13 @@
 #include <jni.h>
 #include <string>
 
-class klass_proxy
+class klass_signature
 {
     JNIEnv *env;
-    jclass klass;
+    jclass owner;
 public:
 
-    klass_proxy(JNIEnv *env, const std::string &klass_name): env(env)
+    klass_signature(JNIEnv *env, const std::string &klass_name): env(env)
     {
         if (env == nullptr || klass_name.empty())
         {
@@ -22,29 +22,29 @@ public:
 
         const char *c_str = klass_name.c_str();
 
-        klass = env->FindClass(c_str);
+        owner = env->FindClass(c_str);
 
-        if (klass == nullptr)
+        if (owner == nullptr)
         {
             env->ExceptionClear();
             env->ThrowNew(env->FindClass("java/lang/ClassNotFound"), c_str);
             throw std::invalid_argument("Unable to find class '" + klass_name + "'");
         }
 
-        env->NewLocalRef(klass);
+        env->NewLocalRef(owner);
     }
 
-    ~klass_proxy()
+    ~klass_signature()
     {
-        if (klass != nullptr && env != nullptr)
+        if (owner != nullptr && env != nullptr)
         {
-            env->DeleteLocalRef(klass);
-            klass = nullptr;
+            env->DeleteLocalRef(owner);
+            owner = nullptr;
         }
     }
 
-    [[nodiscard]] jclass get_klass() const
+    [[nodiscard]] jclass get_owner() const
     {
-        return klass;
+        return owner;
     }
 };
