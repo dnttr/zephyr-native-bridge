@@ -3,7 +3,7 @@
 //
 #pragma once
 
-#include "jni/definitions/method/method_signature.hpp"
+#include "jni/signatures/method/method_signature.hpp"
 
 class object_method final : public method_signature<jobject>
 {

@@ -7,6 +7,8 @@
 #include <jni.h>
 #include <string>
 
+#include "jni/utils/Util.hpp"
+
 class klass_signature
 {
     JNIEnv *env;
@@ -20,17 +22,7 @@ public:
             throw std::invalid_argument("JNIEnv or class is invalid");
         }
 
-        const char *c_str = klass_name.c_str();
-
-        owner = env->FindClass(c_str);
-
-        if (owner == nullptr)
-        {
-            env->ExceptionClear();
-            env->ThrowNew(env->FindClass("java/lang/ClassNotFound"), c_str);
-            throw std::invalid_argument("Unable to find class '" + klass_name + "'");
-        }
-
+        owner = Util::get_klass(env, klass_name);
         env->NewLocalRef(owner);
     }
 

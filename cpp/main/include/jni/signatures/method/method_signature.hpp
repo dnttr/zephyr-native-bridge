@@ -5,12 +5,11 @@
 #pragma once
 
 #include <jni.h>
-#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "jni/definitions/klass_signature.hpp"
+#include "jni/signatures/klass_signature.hpp"
 
 template <typename T>
 class method_signature
@@ -29,8 +28,7 @@ protected:
 
     [[nodiscard]] jmethodID build_identity() const
     {
-        const auto identity = is_static ? env->GetStaticMethodID(owner->get_owner(), name.c_str(), signature.c_str())
-                                        : env->GetMethodID(owner->get_owner(), name.c_str(), signature.c_str());
+        const auto identity = Util::get_method_id(env, owner->get_owner(), name, signature, is_static);
 
         if (identity == nullptr)
         {
@@ -96,5 +94,15 @@ public:
     {
         return identity;
     }
+
+    struct Reference
+    {
+        void *func_ptr;
+        std::vector<std::string> parameters;
+
+        Reference(void *func_ptr, const std::vector<std::string> &params): func_ptr(func_ptr), parameters(params)
+        {
+        }
+    };
 };
 

@@ -3,7 +3,7 @@
 //
 
 #include "setup.hpp"
-#include "jni/definitions/method/impl/void_method.hpp"
+#include "jni/signatures/method/impl/void_method.hpp"
 
 struct MethodProxyFixture {
     std::unique_ptr<klass_signature> klass;
