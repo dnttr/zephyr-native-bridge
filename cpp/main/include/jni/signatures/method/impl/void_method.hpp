@@ -3,6 +3,7 @@
 //
 
 #pragma once
+
 #include "jni/signatures/method/method_signature.hpp"
 
 class void_method final : public method_signature<void>

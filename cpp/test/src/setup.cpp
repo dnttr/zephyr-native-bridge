@@ -2,7 +2,7 @@
 
 #include "cpp/test/include/setup.hpp"
 
-#include "vm_management.hpp"
+#include "../../main/include/vm_management.hpp"
 
 int main(const int argc, char* argv[]) {
     Catch::Session session;
