@@ -5,11 +5,12 @@
 #include "jvmti/jvmti_object.hpp"
 
 #include <algorithm>
+#include <unordered_map>
 
 #include "debug.hpp"
 
 template <typename T>
-method_signature<T> jvmti_object::get_method_descriptor(JNIEnv *env, const jobject &method)
+method_signature<T> jvmti_object::get_method_signature(JNIEnv *env, const jobject &method)
 {
     const auto method_id = env->FromReflectedMethod(method);
 
@@ -45,7 +46,7 @@ method_signature<T> jvmti_object::get_method_descriptor(JNIEnv *env, const jobje
 }
 
 template <typename T>
-std::vector<method_signature<T>> jvmti_object::gather_method_descriptors(JNIEnv *env,
+std::vector<method_signature<T>> jvmti_object::look_for_method_signatures(JNIEnv *env,
     const jclass &klass)
 {
     const auto objects = util::get_methods(env, klass);
@@ -54,7 +55,7 @@ std::vector<method_signature<T>> jvmti_object::gather_method_descriptors(JNIEnv 
 
     for (auto &object : objects)
     {
-        auto method_descriptor = get_method_descriptor<T>(env, jvmti, object);
+        auto method_descriptor = get_method_signature<T>(env, jvmti, object);
         descriptors.push_back(std::move(method_descriptor));
     }
 
@@ -62,13 +63,16 @@ std::vector<method_signature<T>> jvmti_object::gather_method_descriptors(JNIEnv 
 }
 
 template <typename T>
-method_signature<T> jvmti_object::find_method(JNIEnv *env, const jclass klass, std::string method_name, const std::vector<std::string> expected_parameters)
+method_signature<T> jvmti_object::get_method_signature(JNIEnv *env,
+    const jclass klass,
+    std::string method_name,
+    const std::vector<std::string> parameters)
 {
     for (auto &object : util::get_methods(env, klass))
     {
-        if (auto method_descriptor = get_method_descriptor<T>(env, jvmti, object); method_name.compare(method_descriptor.name))
+        if (auto method_descriptor = get_method_signature<T>(env, jvmti, object); method_name.compare(method_descriptor.name))
         {
-            if (util::compare_parameters(expected_parameters, method_descriptor.parameters))
+            if (util::compare_parameters(parameters, method_descriptor.parameters))
             {
                 return method_descriptor;
             }
@@ -78,72 +82,101 @@ method_signature<T> jvmti_object::find_method(JNIEnv *env, const jclass klass, s
     return nullptr;
 }
 
-template <typename T>
-std::vector<JNINativeMethod> jvmti_object::map_methods(const std::map<std::string, Reference> &map,
-    const std::vector<method_signature<T>> &methods, size_t *size)
+void report_lacking_methods(std::multimap<std::string, Reference> map,
+    std::vector<JNINativeMethod> &filtered)
 {
-    if (size == nullptr)
+    for (const auto& name : map | std::views::keys)
     {
-        debug_print("map_methods() is unable to determine size");
-        return {};
-    }
+        auto it = std::ranges::find_if(filtered, [&name](const JNINativeMethod& method) {
+            return name == method.name;
+        });
 
-    auto filtered = methods | std::ranges::views::filter([&map](const method_signature<T> &method)
-           {
-               return map.contains(method.name);
-           }) | std::ranges::views::filter([&map](const method_signature<T> &method)
-           {
-               const auto expected_parameters = map.at(method.name).parameters;
-               const auto declared_parameters = method.parameters;
-
-               return compare_parameters(expected_parameters, declared_parameters);
-           }) | std::ranges::views::transform([&map](const method_signature<T> &method)
-           {
-               char *name = strdup(method.name.c_str());
-               char *signature = strdup(method.signature.c_str());
-
-               if (name == nullptr || signature == nullptr)
-               {
-                   debug_print("map_methods() has failed to allocate memory for method name or signature");
-                   return JNINativeMethod{nullptr, nullptr, nullptr};
-               }
-
-               return JNINativeMethod{name, signature, map.at(method.name).func_ptr
-               };
-           });
-
-    *size = std::ranges::distance(filtered);
-
-    if (*size != map.size())
-    {
-        debug_print("map_methods() was unable to find all methods " + std::string(*size + "/" +  map.size()));
-
-        for (const auto &name : map | std::views::keys)
+        if (it == filtered.end())
         {
-            if (!std::ranges::any_of(filtered, [&name](const JNINativeMethod &method)
-                {
-                    return name == method.name;
-                }))
+            debug_print("map_methods() was unable to find method: " + name);
+
+            if (auto [begin, end] = map.equal_range(name); begin != end)
             {
-                debug_print("map_methods() was unable to find method: " + name);
-
-                if (auto parameters = map.at(name).parameters; !parameters.empty())
+                debug_print("map_methods() is expecting parameters:");
+                for (auto p = begin; p != end; ++p)
                 {
-                    debug_print("map_methods() is expecting parameters:");
-
-
-                    for (const auto& parameter : parameters)
+                    for (const auto& parameters = p->second.parameters; const auto& parameter : parameters)
                     {
                         debug_print("Parameter: " + parameter);
                     }
                 }
             }
         }
+    }
+}
+
+template <typename T>
+std::vector<JNINativeMethod> create_mappings(const std::unordered_multimap<std::string, Reference> &map,
+    const std::vector<method_signature<T>> &methods)
+{
+    auto filtered = methods | std::ranges::views::transform([&map](const method_signature<T>& method) -> std::optional<JNINativeMethod> {
+        auto [begin, end] = map.equal_range(method.name);
+        auto it = std::ranges::find_if(begin, end, [&method](const auto& pair) {
+            return util::compare_parameters(pair.second.parameters, method.parameters);
+        });
+
+        if (it == end)
+            return std::nullopt;
+
+        return JNINativeMethod{
+            strdup(method.name.c_str()),
+            strdup(method.signature.c_str()),
+            it->second.func_ptr
+        };
+    })
+    | std::ranges::views::filter([](const auto& opt) {
+        return opt.has_value();
+    })
+    | std::ranges::views::transform([](const auto& opt) {
+        return *opt;
+    });
+
+    return std::ranges::to<std::vector<JNINativeMethod>>(filtered);
+}
+
+template <typename T>
+std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings(JNIEnv *env,
+    const klass_signature &klass,
+    const std::unordered_multimap<std::string, Reference> &map)
+    {
+
+    const std::vector<method_signature<T>> methods = look_for_method_signatures<T>(env, klass);
+
+    auto filtered = create_mappings(map, methods);
+
+    size_t size = std::ranges::distance(filtered);
+
+    if (size != map.size())
+    {
+        debug_print("map_methods() was unable to find all methods " + std::string(*size + "/" +  map.size()));
+
+        report_lacking_methods(map, filtered);
 
         return {};
     }
 
-    return std::ranges::to<std::vector<JNINativeMethod>>(filtered);
+    return std::make_pair(filtered, size);
+}
+
+template <typename... Ts>
+std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::try_mapping_methods(JNIEnv *env,
+    const klass_signature &klass, const std::unordered_multimap<std::string, Reference> &map)
+{
+    std::vector<JNINativeMethod> methods;
+    size_t total = 0;
+
+    ([&] {
+        auto [methods, count] = create_mappings<Ts>(env, klass, map);
+        methods.insert(methods.end(), methods.begin(), methods.end());
+        total += count;
+    }(), ...);
+
+    return {methods, total};
 }
 
 void jvmti_object::clear_mapped_methods(const std::vector<JNINativeMethod> &vector)

@@ -5,14 +5,13 @@
 #pragma once
 
 #include <jvmti.h>
-#include <map>
 #include <ranges>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
-#include "../jni/signatures/method_signature.hpp"
+#include "jni/signatures/method_signature.hpp"
 
-// Move the Reference struct outside the class
 struct Reference
 {
     std::optional<void *> func_ptr;
@@ -28,29 +27,17 @@ class jvmti_object
     jvmtiEnv *jvmti;
     
     template<typename T = jobject>
-    method_signature<T> get_method_descriptor(JNIEnv *env, const jobject &method);
+    method_signature<T> get_method_signature(JNIEnv *env, const jobject &method);
 
     template <class T>
-    std::vector<method_signature<T>> gather_method_descriptors(JNIEnv *env, const jclass &klass);
+    std::vector<method_signature<T>> look_for_method_signatures(JNIEnv *env, const jclass &klass);
+
     template <class T>
-    method_signature<T> find_method(JNIEnv *env, jclass klass, std::string method_name,
-                                    std::vector<std::string> parameters);
+    std::pair<std::vector<JNINativeMethod>, size_t> create_mappings(JNIEnv *env,
+        const klass_signature &klass,
+        const std::unordered_multimap<std::string, Reference> &map);
 
-    template<typename T = jobject>
-    std::vector<JNINativeMethod> map_methods(
-        const std::map<std::string, Reference> &map,
-        const std::vector<method_signature<T>> &methods, 
-        size_t *size);
-
-    void clear_mapped_methods(const std::vector<JNINativeMethod> &vector);
-
-    /*template<typename T = jobject>
-    void lookup_methods(std::string name, std::optional<std::vector<std::string>> parameters)
-    {
-        // Implementation needed
-    }*/
 public:
-
     explicit jvmti_object(jvmtiEnv *jvmti): jvmti(jvmti)
     {
         if (jvmti == nullptr)
@@ -59,11 +46,18 @@ public:
         }
     }
 
+    template <typename... T>
+    std::pair<std::vector<JNINativeMethod>, size_t> try_mapping_methods(JNIEnv *env,
+        const klass_signature &klass,
+        const std::unordered_multimap<std::string, Reference> &map);
+
+    void clear_mapped_methods(const std::vector<JNINativeMethod> &vector);
+
+    template <class T>
+    method_signature<T> get_method_signature(JNIEnv *env, jclass klass, std::string method_name, std::vector<std::string> parameters);
+
     [[nodiscard]] jvmtiEnv *get_owner() const
     {
         return jvmti;
     }
-
-    // Optional: Add type alias for backward compatibility
-    // using Reference = ::Reference;
 };
