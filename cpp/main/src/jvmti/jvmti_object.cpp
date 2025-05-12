@@ -62,11 +62,19 @@ std::vector<method_signature<T>> jvmti_object::gather_method_descriptors(JNIEnv 
 }
 
 template <typename T>
-method_signature<T> find_method(JNIEnv *env, const jclass klass, std::string method_name, std::vector<std::string> parameters)
+method_signature<T> jvmti_object::find_method(JNIEnv *env, const jclass klass, std::string method_name, const std::vector<std::string> expected_parameters)
 {
-    auto objects = util::get_methods(env, klass);
+    for (auto &object : util::get_methods(env, klass))
+    {
+        if (auto method_descriptor = get_method_descriptor<T>(env, jvmti, object); method_name.compare(method_descriptor.name))
+        {
+            if (util::compare_parameters(expected_parameters, method_descriptor.parameters))
+            {
+                return method_descriptor;
+            }
+        }
+    }
 
-    //TODO: implement find_method
     return nullptr;
 }
 

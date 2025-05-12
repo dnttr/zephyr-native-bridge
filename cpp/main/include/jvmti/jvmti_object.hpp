@@ -32,6 +32,9 @@ class jvmti_object
 
     template <class T>
     std::vector<method_signature<T>> gather_method_descriptors(JNIEnv *env, const jclass &klass);
+    template <class T>
+    method_signature<T> find_method(JNIEnv *env, jclass klass, std::string method_name,
+                                    std::vector<std::string> parameters);
 
     template<typename T = jobject>
     std::vector<JNINativeMethod> map_methods(
