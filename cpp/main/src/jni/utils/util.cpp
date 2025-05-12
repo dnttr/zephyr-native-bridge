@@ -33,6 +33,30 @@ jmethodID util::get_method_id(JNIEnv *env, const std::string &klass_name, const 
     return env->GetMethodID(klass, method_name.c_str(), signature.c_str());
 }
 
+std::vector<jobject> util::get_methods(JNIEnv *env, const jclass &clazz)
+{
+    const auto method_id = util::get_method_id(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
+
+    if (method_id == nullptr)
+    {
+        return {};
+    }
+
+    const auto array = reinterpret_cast<jobjectArray>(env->CallObjectMethod(clazz, method_id));
+    const auto array_size = env->GetArrayLength(array);
+
+    std::vector<jobject> methods(array_size);
+
+    for (int i = 0; i < array_size; ++i)
+    {
+        methods[i] = env->GetObjectArrayElement(array, i);
+    }
+
+    env->DeleteLocalRef(array);
+
+    return methods;
+}
+
 jclass util::get_klass(JNIEnv *env, const std::string &name)
 {
     const char *c_str = name.c_str();

@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include "jni/signatures/method/method_signature.hpp"
+#include "jni/signatures/method_signature.hpp"
 
-class object_method final : public method_signature<jobject>
+class object_method : public method_signature<jobject>
 {
 public:
     using method_signature::method_signature;
 
-    jobject invoke(const klass_signature &instance) override {
+    jobject invoke(const klass_signature &instance, std::vector<jvalue> &parameters) override {
         if (is_static) {
             return env->CallStaticObjectMethod(get_owner(), get_identity());
         }

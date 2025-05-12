@@ -4,18 +4,18 @@
 
 #pragma once
 
-#include "jni/signatures/method/method_signature.hpp"
+#include "jni/signatures/method_signature.hpp"
 
 class void_method final : public method_signature<void>
 {
 public:
     using method_signature::method_signature;
 
-    void invoke(const klass_signature &instance) override
+    void invoke(const klass_signature &instance, std::vector<jvalue> &parameters) override
     {
         if (is_static)
         {
-            env->CallStaticVoidMethod(get_owner(), identity);
+            env->CallStaticVoidMethod(get_owner(), identity, parameters.data());
         } else
         {
             env->CallVoidMethod(instance.get_owner(), identity);

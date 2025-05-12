@@ -10,22 +10,32 @@
 #include <stdexcept>
 #include <vector>
 
-#include "jni/signatures/method/method_signature.hpp"
+#include "../jni/signatures/method_signature.hpp"
+
+// Move the Reference struct outside the class
+struct Reference
+{
+    std::optional<void *> func_ptr;
+    std::vector<std::string> parameters;
+
+    Reference(void *func_ptr, const std::vector<std::string> &params): func_ptr(func_ptr), parameters(params)
+    {
+    }
+};
 
 class jvmti_object
 {
     jvmtiEnv *jvmti;
-
+    
     template<typename T = jobject>
-    method_signature<T> get_method_descriptor(JNIEnv *env, jvmtiEnv *jvmti, const jobject &method);
+    method_signature<T> get_method_descriptor(JNIEnv *env, const jobject &method);
 
-    template<typename T = jobject>
-    std::vector<method_signature<T>> gather_method_descriptors(JNIEnv *env, jvmtiEnv *jvmti,
-                                                  const std::vector<jobject> &objects);
+    template <class T>
+    std::vector<method_signature<T>> gather_method_descriptors(JNIEnv *env, const jclass &klass);
 
     template<typename T = jobject>
     std::vector<JNINativeMethod> map_methods(
-        const std::map<std::string, typename method_signature<T>::Reference> &map,
+        const std::map<std::string, Reference> &map,
         const std::vector<method_signature<T>> &methods, 
         size_t *size);
 
@@ -50,4 +60,7 @@ public:
     {
         return jvmti;
     }
+
+    // Optional: Add type alias for backward compatibility
+    // using Reference = ::Reference;
 };

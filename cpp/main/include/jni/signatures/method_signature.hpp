@@ -83,7 +83,7 @@ public:
         return *this;
     }
 
-    virtual T invoke(const klass_signature &instance) = 0;
+    virtual T invoke(const klass_signature &instance, std::vector<jvalue> &parameters) = 0;
 
     [[nodiscard]] jclass get_owner() const
     {
@@ -94,15 +94,5 @@ public:
     {
         return identity;
     }
-
-    struct Reference
-    {
-        void *func_ptr;
-        std::vector<std::string> parameters;
-
-        Reference(void *func_ptr, const std::vector<std::string> &params): func_ptr(func_ptr), parameters(params)
-        {
-        }
-    };
 };
 

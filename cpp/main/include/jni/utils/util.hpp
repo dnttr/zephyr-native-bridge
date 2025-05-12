@@ -23,4 +23,6 @@ namespace util
     std::vector<std::string> get_parameters(JNIEnv *env, const jobject &method);
 
     bool compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2);
+
+    std::vector<jobject> get_methods(JNIEnv *env, const jclass &clazz);
 }

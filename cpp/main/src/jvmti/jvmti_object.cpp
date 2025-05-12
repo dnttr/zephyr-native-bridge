@@ -9,7 +9,7 @@
 #include "debug.hpp"
 
 template <typename T>
-method_signature<T> jvmti_object::get_method_descriptor(JNIEnv *env, jvmtiEnv *jvmti, const jobject &method)
+method_signature<T> jvmti_object::get_method_descriptor(JNIEnv *env, const jobject &method)
 {
     const auto method_id = env->FromReflectedMethod(method);
 
@@ -45,9 +45,11 @@ method_signature<T> jvmti_object::get_method_descriptor(JNIEnv *env, jvmtiEnv *j
 }
 
 template <typename T>
-std::vector<method_signature<T>> jvmti_object::gather_method_descriptors(JNIEnv *env, jvmtiEnv *jvmti,
-    const std::vector<jobject> &objects)
+std::vector<method_signature<T>> jvmti_object::gather_method_descriptors(JNIEnv *env,
+    const jclass &klass)
 {
+    const auto objects = util::get_methods(env, klass);
+
     std::vector<method_signature<T>> descriptors;
 
     for (auto &object : objects)
@@ -60,7 +62,17 @@ std::vector<method_signature<T>> jvmti_object::gather_method_descriptors(JNIEnv 
 }
 
 template <typename T>
-std::vector<JNINativeMethod> jvmti_object::map_methods(const std::map<std::string, typename method_signature<T>::Reference> &map, const std::vector<method_signature<T>> &methods, size_t *size)
+method_signature<T> find_method(JNIEnv *env, const jclass klass, std::string method_name, std::vector<std::string> parameters)
+{
+    auto objects = util::get_methods(env, klass);
+
+    //TODO: implement find_method
+    return nullptr;
+}
+
+template <typename T>
+std::vector<JNINativeMethod> jvmti_object::map_methods(const std::map<std::string, Reference> &map,
+    const std::vector<method_signature<T>> &methods, size_t *size)
 {
     if (size == nullptr)
     {
