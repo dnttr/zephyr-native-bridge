@@ -148,36 +148,36 @@ std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings(JN
 
     const std::vector<method_signature<T>> methods = look_for_method_signatures<T>(env, klass);
 
-    auto filtered = create_mappings(map, methods);
+    auto filtered_mappings = create_mappings(map, methods);
 
-    size_t size = std::ranges::distance(filtered);
+    size_t size = std::ranges::distance(filtered_mappings);
 
     if (size != map.size())
     {
         debug_print("map_methods() was unable to find all methods " + std::string(size + "/" +  map.size()));
 
-        report_lacking_methods(map, filtered);
+        report_lacking_methods(map, filtered_mappings);
 
         return {};
     }
 
-    return std::make_pair(filtered, size);
+    return std::make_pair(filtered_mappings, size);
 }
 
 template <typename... Ts>
 std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::try_mapping_methods(JNIEnv *env,
     const klass_signature &klass, const std::unordered_multimap<std::string, Reference> &map)
 {
-    std::vector<JNINativeMethod> methods;
+    std::vector<JNINativeMethod> mapped_methods;
     size_t total = 0;
 
     ([&] {
         auto [methods, count] = create_mappings<Ts>(env, klass, map);
-        methods.insert(methods.end(), methods.begin(), methods.end());
+        mapped_methods.insert(methods.end(), methods.begin(), methods.end());
         total += count;
     }(), ...);
 
-    return {methods, total};
+    return {mapped_methods, total};
 }
 
 void jvmti_object::clear_mapped_methods(const std::vector<JNINativeMethod> &vector)
