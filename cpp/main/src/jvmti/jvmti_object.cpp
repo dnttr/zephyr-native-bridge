@@ -5,6 +5,7 @@
 #include "jvmti/jvmti_object.hpp"
 
 #include <algorithm>
+#include <map>
 #include <unordered_map>
 
 #include "debug.hpp"
@@ -153,7 +154,7 @@ std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings(JN
 
     if (size != map.size())
     {
-        debug_print("map_methods() was unable to find all methods " + std::string(*size + "/" +  map.size()));
+        debug_print("map_methods() was unable to find all methods " + std::string(size + "/" +  map.size()));
 
         report_lacking_methods(map, filtered);
 
