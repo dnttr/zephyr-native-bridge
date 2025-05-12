@@ -83,7 +83,7 @@ public:
         return *this;
     }
 
-    virtual T invoke(const klass_signature &instance, std::vector<jvalue> &parameters) = 0;
+    virtual T invoke(const jobject &instance, std::vector<jvalue> &parameters) = 0;
 
     [[nodiscard]] jclass get_owner() const
     {

@@ -13,8 +13,8 @@ class klass_signature
 {
     JNIEnv *env;
     jclass owner;
-public:
 
+public:
     klass_signature(JNIEnv *env, const std::string &klass_name): env(env)
     {
         if (env == nullptr || klass_name.empty())

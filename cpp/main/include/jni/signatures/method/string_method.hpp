@@ -15,7 +15,7 @@ public:
     {
     }
 
-    jstring invoke(const klass_signature &instance, std::vector<jvalue> &parameters) override
+    jstring invoke(const jobject &instance, std::vector<jvalue> &parameters) override
     {
         jobject object;
 
@@ -23,13 +23,13 @@ public:
             object = env->CallStaticObjectMethod(get_owner(), get_identity());
         } else
         {
-            object = env->CallObjectMethod(instance.get_owner(), get_identity());
+            object = env->CallObjectMethod(instance, get_identity());
         }
 
         return reinterpret_cast<jstring>(object);
     }
 
-    std::string invoke_and_transform(JNIEnv *env, const klass_signature &instance, std::vector<jvalue> &parameters)
+    std::string invoke_and_transform(JNIEnv *env, const jobject &instance, std::vector<jvalue> &parameters)
     {
         return util::get_string(env, invoke(instance, parameters), true);
     }
