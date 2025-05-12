@@ -4,7 +4,6 @@
 
 #include "vm_object.hpp"
 
-
 JNIEnv * vm_object::get_env() const
 {
     JNIEnv *env = nullptr;

@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include "debug.hpp"
+
 template <typename T>
 method_signature<T> jvmti_object::get_method_descriptor(JNIEnv *env, jvmtiEnv *jvmti, const jobject &method)
 {
@@ -19,7 +21,7 @@ method_signature<T> jvmti_object::get_method_descriptor(JNIEnv *env, jvmtiEnv *j
     {
         char *buffer;
         jvmti->GetErrorName(error, &buffer);
-        std::cerr << "get_method_descriptor >>" << "Error occurred while invoking GetMethodName: " << buffer << std::endl;
+        debug_print("get_method_descriptor() has encountered an error: " + std::string(buffer));
         jvmti->Deallocate(reinterpret_cast<unsigned char *>(buffer));
 
         return method_signature<T>(nullptr);
@@ -37,7 +39,7 @@ method_signature<T> jvmti_object::get_method_descriptor(JNIEnv *env, jvmtiEnv *j
         jvmti->Deallocate(reinterpret_cast<unsigned char *>(name));
     }
 
-    auto parameters = Util::get_parameters(env, method);
+    auto parameters = util::get_parameters(env, method);
 
     return method_signature<T>{name_duplicate, signature_duplicate, parameters};
 }
@@ -62,7 +64,7 @@ std::vector<JNINativeMethod> jvmti_object::map_methods(const std::map<std::strin
 {
     if (size == nullptr)
     {
-        std::cerr << "map_methods >> " << "Size cannot be nullptr" << std::endl;
+        debug_print("map_methods() is unable to determine size");
         return {};
     }
 
@@ -82,7 +84,7 @@ std::vector<JNINativeMethod> jvmti_object::map_methods(const std::map<std::strin
 
                if (name == nullptr || signature == nullptr)
                {
-                   std::cerr << "map_methods >> " << "Failed to allocate memory for method name or signature" << std::endl;
+                   debug_print("map_methods() has failed to allocate memory for method name or signature");
                    return JNINativeMethod{nullptr, nullptr, nullptr};
                }
 
@@ -94,7 +96,7 @@ std::vector<JNINativeMethod> jvmti_object::map_methods(const std::map<std::strin
 
     if (*size != map.size())
     {
-        std::cerr << "map_methods >> " << "Not all methods were found: " << *size << " / " << map.size() << std::endl;
+        debug_print("map_methods() was unable to find all methods " + std::string(*size + "/" +  map.size()));
 
         for (const auto &name : map | std::views::keys)
         {
@@ -103,20 +105,17 @@ std::vector<JNINativeMethod> jvmti_object::map_methods(const std::map<std::strin
                     return name == method.name;
                 }))
             {
-                std::cerr << "map_methods >> " << "Method not found: " << name << std::endl;
+                debug_print("map_methods() was unable to find method: " + name);
 
                 if (auto parameters = map.at(name).parameters; !parameters.empty())
                 {
-                    std::cerr << "map_methods >> " << "Expected parameters: ";
+                    debug_print("map_methods() is expecting parameters:");
 
-                    std::cerr << "[ ";
 
                     for (const auto& parameter : parameters)
                     {
-                        std::cerr << parameter << " ";
+                        debug_print("Parameter: " + parameter);
                     }
-
-                    std::cerr << "]" << std::endl;
                 }
             }
         }

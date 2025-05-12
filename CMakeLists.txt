@@ -9,9 +9,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(${CMAKE_SOURCE_DIR}/tools/Platform.cmake)
 include(${CMAKE_SOURCE_DIR}/tools/Dependencies.cmake)
 
+add_compile_definitions(DEBUG)
+
 # Source files
 set(SOURCE_FILES
-        ${CMAKE_SOURCE_DIR}/cpp/src/main.cpp
+        ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_object.cpp
+        ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_management.cpp
+        ${CMAKE_SOURCE_DIR}/cpp/main/src/jvmti/jvmti_object.cpp
+        ${CMAKE_SOURCE_DIR}/cpp/main/src/jni/utils/util.cpp
 )
 
 set(TEST_FILES
@@ -71,7 +76,7 @@ else()
 endif()
 
 # Create Catch2-based test executable
-add_executable(znb_tests ${TEST_FILES} ${TEST_LIST})
+add_executable(znb_tests ${SOURCE_FILES} ${TEST_FILES} ${TEST_LIST})
 prepare_dependencies()
 add_dependencies(znb_tests rust_znb)
 target_include_directories(znb_tests PUBLIC

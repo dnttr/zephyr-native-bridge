@@ -22,7 +22,7 @@ public:
             throw std::invalid_argument("JNIEnv or class is invalid");
         }
 
-        owner = Util::get_klass(env, klass_name);
+        owner = util::get_klass(env, klass_name);
         env->NewLocalRef(owner);
     }
 

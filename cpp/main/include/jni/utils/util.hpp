@@ -8,7 +8,7 @@
 #include <jni.h>
 #include <string>
 
-namespace Util
+namespace util
 {
     jmethodID get_method_id(JNIEnv *env, const jclass &klass, const std::string &method_name, const std::string &signature, bool is_static);
 

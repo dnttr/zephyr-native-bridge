@@ -28,7 +28,7 @@ protected:
 
     [[nodiscard]] jmethodID build_identity() const
     {
-        const auto identity = Util::get_method_id(env, owner->get_owner(), name, signature, is_static);
+        const auto identity = util::get_method_id(env, owner->get_owner(), name, signature, is_static);
 
         if (identity == nullptr)
         {

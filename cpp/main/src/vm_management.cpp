@@ -4,6 +4,8 @@
 
 #include "vm_management.hpp"
 
+#include "debug.hpp"
+
 std::unique_ptr<vm_object> vm_management::create_and_wrap_vm(const std::string &classpath)
 {
     vm_data vm_data;
@@ -21,34 +23,34 @@ std::unique_ptr<vm_object> vm_management::create_and_wrap_vm(const std::string &
 std::unique_ptr<vm_object> vm_management::create_and_wrap_vm(const vm_data &vm_data,
                                                              const std::optional<jvmti_data> jvmti_data)
 {
-    std::cout << "Beginning initialization of vm." << std::endl;
+    debug_print("Beginning initialization of vm.");
     const auto [jvm, jni] = create_vm(vm_data);
 
     jvmtiEnv *jvmti = nullptr;
-    std::cout << "------------------------------" << std::endl;
+    debug_print("------------------------------");
 
     if (jvmti_data.has_value())
     {
-        std::cout << "JVMTI initialization requested." << std::endl;
+        debug_print("JVMTI initialization requested.");
         const auto data = jvmti_data.value();
 
         jvmti = get_jvmti(jvm, data.version);
 
         const auto capabilities = get_capabilities(jvmti, data);
 
-        std::cout << "JVMTI capabilities requested." << std::endl;
+        debug_print("JVMTI capabilities requested.");
 
         if (jvmti->AddCapabilities(&capabilities) != JVMTI_ERROR_NONE)
         {
             throw std::runtime_error("Failed to add jvmti capabilities.");
         }
 
-        std::cout << "JVMTI capabilities added." << std::endl;
-        std::cout << "JVMTI initialization completed." << std::endl;
-        std::cout << "------------------------------" << std::endl;
+        debug_print("JVMTI capabilities added.");
+        debug_print("JVMTI initialization completed.");
+        debug_print("------------------------------");
     }
 
-    std::cout << "Finished initialization of vm." << std::endl;
+    debug_print("Finished initialization of vm.");
 
     return std::make_unique<vm_object>(vm_data.version, jvm, jvmti, jni);
 }
@@ -80,8 +82,8 @@ std::pair<JavaVM *, JNIEnv *> vm_management::create_vm(const vm_data &vm_data)
 
     if (use_classpath)
     {
-        std::cout << "------------------------------" << std::endl;
-        std::cout << "Requesting file class loading." << std::endl;
+        debug_print("------------------------------");
+        debug_print("Requesting file class loading.");
 
         const auto classpath = vm_data.classpath.value();
 
@@ -94,7 +96,7 @@ std::pair<JavaVM *, JNIEnv *> vm_management::create_vm(const vm_data &vm_data)
 
         options[0].optionString = const_cast<char *>(classpath_option.c_str());
 
-        std::cout << "Loaded classes from: " << classpath << "." << std::endl;
+        debug_print("Loaded classes from: " + classpath + ".");
     }
 
     vm_args.version = vm_data.version;

@@ -7,7 +7,9 @@
 #include <algorithm>
 #include <unordered_set>
 
-jmethodID Util::get_method_id(JNIEnv *env, const jclass &klass, const std::string &method_name,
+#include "debug.hpp"
+
+jmethodID util::get_method_id(JNIEnv *env, const jclass &klass, const std::string &method_name,
                               const std::string &signature, const bool is_static)
 {
     if (is_static)
@@ -18,7 +20,7 @@ jmethodID Util::get_method_id(JNIEnv *env, const jclass &klass, const std::strin
     return env->GetMethodID(klass, method_name.c_str(), signature.c_str());
 }
 
-jmethodID Util::get_method_id(JNIEnv *env, const std::string &klass_name, const std::string &method_name,
+jmethodID util::get_method_id(JNIEnv *env, const std::string &klass_name, const std::string &method_name,
     const std::string &signature, bool is_static)
 {
     const auto klass = env->FindClass(klass_name.c_str());
@@ -31,7 +33,7 @@ jmethodID Util::get_method_id(JNIEnv *env, const std::string &klass_name, const 
     return env->GetMethodID(klass, method_name.c_str(), signature.c_str());
 }
 
-jclass Util::get_klass(JNIEnv *env, const std::string &name)
+jclass util::get_klass(JNIEnv *env, const std::string &name)
 {
     const char *c_str = name.c_str();
     const auto klass = env->FindClass(c_str);
@@ -46,13 +48,13 @@ jclass Util::get_klass(JNIEnv *env, const std::string &name)
     return klass;
 }
 
-std::string Util::get_string(JNIEnv *env, const jstring &string, const bool release)
+std::string util::get_string(JNIEnv *env, const jstring &string, const bool release)
 {
     const char *key = env->GetStringUTFChars(string, nullptr);
 
     if (key == nullptr)
     {
-        std::cerr << "get_string >> " << "Failed to get UTF string" << std::endl;
+        debug_print("get_string() is unable to get UTF string");
         return {};
     }
 
@@ -66,7 +68,7 @@ std::string Util::get_string(JNIEnv *env, const jstring &string, const bool rele
     return str;
 }
 
-void Util::delete_references(JNIEnv *env, const std::vector<jobject> &references)
+void util::delete_references(JNIEnv *env, const std::vector<jobject> &references)
 {
     for (const auto &reference : references)
     {
@@ -74,11 +76,11 @@ void Util::delete_references(JNIEnv *env, const std::vector<jobject> &references
     }
 }
 
-std::vector<std::string> Util::get_parameters(JNIEnv *env, const jobject &method)
+std::vector<std::string> util::get_parameters(JNIEnv *env, const jobject &method)
 {
     if (method == nullptr)
     {
-        std::cerr << "get_parameters >> " << "Unable to obtain parameters as provided method object is null" << std::endl;
+        debug_print("get_parameters() is unable to obtain parameters as provided method object is null");
         return {};
     }
 
@@ -101,7 +103,7 @@ std::vector<std::string> Util::get_parameters(JNIEnv *env, const jobject &method
 
     if (array == nullptr)
     {
-        std::cerr << "get_parameters >> " << "Unable to get array, as it is null" << std::endl;
+        debug_print("get_parameters() is unable to get array.");
 
         return {};
     }
@@ -124,7 +126,7 @@ std::vector<std::string> Util::get_parameters(JNIEnv *env, const jobject &method
     return methods;
 }
 
-bool Util::compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2)
+bool util::compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2)
 {
     if (v1.size() != v2.size()) {
         return false;
