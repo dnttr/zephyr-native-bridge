@@ -6,7 +6,7 @@
 
 #include "ZNBKit/debug.hpp"
 
-std::unique_ptr<vm_object> vm_management::create_and_wrap_vm(const std::string &classpath)
+std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(const std::string &classpath)
 {
     vm_data vm_data;
     vm_data.version = JNI_VERSION_21;
@@ -20,7 +20,7 @@ std::unique_ptr<vm_object> vm_management::create_and_wrap_vm(const std::string &
     return create_and_wrap_vm(vm_data, jvmti_data);
 }
 
-std::unique_ptr<vm_object> vm_management::create_and_wrap_vm(const vm_data &vm_data,
+std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(const vm_data &vm_data,
                                                              const std::optional<jvmti_data> jvmti_data)
 {
     debug_print("Beginning initialization of vm.");
@@ -55,7 +55,7 @@ std::unique_ptr<vm_object> vm_management::create_and_wrap_vm(const vm_data &vm_d
     return std::make_unique<vm_object>(vm_data.version, jvm, jvmti, jni);
 }
 
-jvmtiCapabilities vm_management::get_capabilities(const jvmtiEnv *jvmti, const jvmti_data data)
+jvmtiCapabilities znb_kit::vm_management::get_capabilities(const jvmtiEnv *jvmti, const jvmti_data data)
 {
     if (jvmti == nullptr)
     {
@@ -69,7 +69,7 @@ jvmtiCapabilities vm_management::get_capabilities(const jvmtiEnv *jvmti, const j
     return capabilities;
 }
 
-std::pair<JavaVM *, JNIEnv *> vm_management::create_vm(const vm_data &vm_data)
+std::pair<JavaVM *, JNIEnv *> znb_kit::vm_management::create_vm(const vm_data &vm_data)
 {
     const bool use_classpath = vm_data.classpath.has_value();
     const int options_count = use_classpath ? 1 : 0;
@@ -115,7 +115,7 @@ std::pair<JavaVM *, JNIEnv *> vm_management::create_vm(const vm_data &vm_data)
     return std::make_pair(jvm, jni);
 }
 
-jvmtiEnv * vm_management::get_jvmti(JavaVM *vm, const int version)
+jvmtiEnv * znb_kit::vm_management::get_jvmti(JavaVM *vm, const int version)
 {
     jvmtiEnv *jvmti = nullptr;
     if (vm->GetEnv(reinterpret_cast<void **>(&jvmti), version) != JNI_OK)

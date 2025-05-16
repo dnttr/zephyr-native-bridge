@@ -5,6 +5,8 @@
 #include "ZNBKit/debug.hpp"
 #include "ZNBKit/vm_management.hpp"
 
+using namespace znb_kit;
+
 int main(const int argc, char* argv[]) {
     Catch::Session session;
 

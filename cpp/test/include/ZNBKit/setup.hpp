@@ -10,9 +10,9 @@
 
 #include "config.hpp"
 
-inline std::unique_ptr<vm_object> vm = nullptr;
+inline std::unique_ptr<znb_kit::vm_object> vm = nullptr;
 
-inline vm_object *get_vm()
+inline znb_kit::vm_object *get_vm()
 {
     if (vm == nullptr)
     {

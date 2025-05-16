@@ -9,12 +9,10 @@
 #include <unordered_map>
 
 #include "ZNBKit/debug.hpp"
-#include "ZNBKit/jni/signatures/klass_signature.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
-#include "ZNBKit/jni/utils/util.hpp"
 
 template <typename T>
-method_signature<T> jvmti_object::get_method_signature(JNIEnv *env, const jobject &method)
+znb_kit::method_signature<T> znb_kit::jvmti_object::get_method_signature(JNIEnv *env, const jobject &method)
 {
     const auto method_id = env->FromReflectedMethod(method);
 
@@ -44,16 +42,16 @@ method_signature<T> jvmti_object::get_method_signature(JNIEnv *env, const jobjec
         jvmti->Deallocate(reinterpret_cast<unsigned char *>(name));
     }
 
-    auto parameters = util::get_parameters(env, method);
+    auto parameters = get_parameters(env, method);
 
     return method_signature<T>{name_duplicate, signature_duplicate, parameters};
 }
 
 template <typename T>
-std::vector<method_signature<T>> jvmti_object::look_for_method_signatures(JNIEnv *env,
+std::vector<znb_kit::method_signature<T>> znb_kit::jvmti_object::look_for_method_signatures(JNIEnv *env,
     const jclass &klass)
 {
-    const auto objects = util::get_methods(env, klass);
+    const auto objects = get_methods(env, klass);
 
     std::vector<method_signature<T>> descriptors;
 
@@ -67,16 +65,16 @@ std::vector<method_signature<T>> jvmti_object::look_for_method_signatures(JNIEnv
 }
 
 template <typename T>
-method_signature<T> jvmti_object::get_method_signature(JNIEnv *env,
+znb_kit::method_signature<T> znb_kit::jvmti_object::get_method_signature(JNIEnv *env,
     const jclass klass,
     std::string method_name,
     const std::vector<std::string> parameters)
 {
-    for (auto &object : util::get_methods(env, klass))
+    for (auto &object : get_methods(env, klass))
     {
         if (auto method_descriptor = get_method_signature<T>(env, jvmti, object); method_name.compare(method_descriptor.name))
         {
-            if (util::compare_parameters(parameters, method_descriptor.parameters))
+            if (compare_parameters(parameters, method_descriptor.parameters))
             {
                 return method_descriptor;
             }
@@ -86,7 +84,7 @@ method_signature<T> jvmti_object::get_method_signature(JNIEnv *env,
     return nullptr;
 }
 
-void report_lacking_methods(std::multimap<std::string, Reference> map,
+void report_lacking_methods(std::multimap<std::string, znb_kit::Reference> map,
     std::vector<JNINativeMethod> &filtered)
 {
     for (const auto& name : map | std::views::keys)
@@ -115,13 +113,13 @@ void report_lacking_methods(std::multimap<std::string, Reference> map,
 }
 
 template <typename T>
-std::vector<JNINativeMethod> create_mappings(const std::unordered_multimap<std::string, Reference> &map,
-    const std::vector<method_signature<T>> &methods)
+std::vector<JNINativeMethod> create_mappings(const std::unordered_multimap<std::string, znb_kit::Reference> &map,
+    const std::vector<znb_kit::method_signature<T>> &methods)
 {
-    auto filtered = methods | std::ranges::views::transform([&map](const method_signature<T>& method) -> std::optional<JNINativeMethod> {
+    auto filtered = methods | std::ranges::views::transform([&map](const znb_kit::method_signature<T>& method) -> std::optional<JNINativeMethod> {
         auto [begin, end] = map.equal_range(method.name);
         auto it = std::ranges::find_if(begin, end, [&method](const auto& pair) {
-            return util::compare_parameters(pair.second.parameters, method.parameters);
+            return compare_parameters(pair.second.parameters, method.parameters);
         });
 
         if (it == end)
@@ -144,7 +142,7 @@ std::vector<JNINativeMethod> create_mappings(const std::unordered_multimap<std::
 }
 
 template <typename T>
-std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings(JNIEnv *env,
+std::pair<std::vector<JNINativeMethod>, size_t> znb_kit::jvmti_object::create_mappings(JNIEnv *env,
     const klass_signature &klass,
     const std::unordered_multimap<std::string, Reference> &map)
     {
@@ -168,7 +166,7 @@ std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings(JN
 }
 
 template <typename... Ts>
-std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::try_mapping_methods(JNIEnv *env,
+std::pair<std::vector<JNINativeMethod>, size_t> znb_kit::jvmti_object::try_mapping_methods(JNIEnv *env,
     const klass_signature &klass, const std::unordered_multimap<std::string, Reference> &map)
 {
     std::vector<JNINativeMethod> mapped_methods;
@@ -183,7 +181,7 @@ std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::try_mapping_method
     return {mapped_methods, total};
 }
 
-void jvmti_object::clear_mapped_methods(const std::vector<JNINativeMethod> &vector)
+void znb_kit::jvmti_object::clear_mapped_methods(const std::vector<JNINativeMethod> &vector)
 {
     for (const auto native_method : vector)
     {

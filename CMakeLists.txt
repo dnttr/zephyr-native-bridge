@@ -26,10 +26,8 @@ set(SOURCE_FILES
 add_library(znb SHARED ${SOURCE_FILES})
 
 target_include_directories(znb
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/cpp/main/include/private
         PUBLIC
-        ${CMAKE_SOURCE_DIR}/cpp/main/include/public
+        ${CMAKE_SOURCE_DIR}/cpp/main/include
         ${MAIN_HEADER_DEST}
 )
 
@@ -60,13 +58,13 @@ else()
     message(WARNING "No test files found in ${CMAKE_SOURCE_DIR}/cpp/test/src/impl/")
 endif()
 
-file(GLOB_RECURSE MAIN_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/main/include/public/*.hpp")
+file(GLOB_RECURSE MAIN_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/main/include/*.hpp")
 file(GLOB_RECURSE TEST_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/test/include/*.hpp")
 
 add_custom_target(copy_main_headers ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory "${MAIN_HEADER_DEST}/ZNBKit"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/cpp/main/include/public"
+        "${CMAKE_SOURCE_DIR}/cpp/main/include"
         "${MAIN_HEADER_DEST}/ZNBKit"
         DEPENDS ${MAIN_HEADER_FILES}
         COMMENT "Copying main headers to build directory"
@@ -123,6 +121,6 @@ install(TARGETS znb
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin)
 
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/cpp/main/include/public/
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/cpp/main/include/
         DESTINATION include
         FILES_MATCHING PATTERN "*.hpp")

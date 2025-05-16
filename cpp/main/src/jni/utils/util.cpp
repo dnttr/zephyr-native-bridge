@@ -21,7 +21,7 @@ bool look_for_exceptions(JNIEnv *env)
     return false;
 }
 
-jmethodID util::get_method_id(JNIEnv *env, const jclass &klass, const std::string &method_name,
+jmethodID znb_kit::get_method_id(JNIEnv *env, const jclass &klass, const std::string &method_name,
                               const std::string &signature, const bool is_static)
 {
     if (is_static)
@@ -32,10 +32,10 @@ jmethodID util::get_method_id(JNIEnv *env, const jclass &klass, const std::strin
     return env->GetMethodID(klass, method_name.c_str(), signature.c_str());
 }
 
-jmethodID util::get_method_id(JNIEnv *env, const std::string &klass_name, const std::string &method_name,
+jmethodID znb_kit::get_method_id(JNIEnv *env, const std::string &klass_name, const std::string &method_name,
     const std::string &signature, const bool is_static)
 {
-    const auto klass = get_klass(env, klass_name);
+    const auto klass = znb_kit::get_klass(env, klass_name);
 
     if (is_static)
     {
@@ -45,9 +45,9 @@ jmethodID util::get_method_id(JNIEnv *env, const std::string &klass_name, const 
     return env->GetMethodID(klass, method_name.c_str(), signature.c_str());
 }
 
-std::vector<jobject> util::get_methods(JNIEnv *env, const jclass &clazz)
+std::vector<jobject> znb_kit::get_methods(JNIEnv *env, const jclass &clazz)
 {
-    const auto method_id = util::get_method_id(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
+    const auto method_id = znb_kit::get_method_id(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
 
     if (method_id == nullptr)
     {
@@ -80,7 +80,7 @@ std::vector<jobject> util::get_methods(JNIEnv *env, const jclass &clazz)
     return methods;
 }
 
-jclass util::get_klass(JNIEnv *env, const std::string &name)
+jclass znb_kit::get_klass(JNIEnv *env, const std::string &name)
 {
     const char *c_str = name.c_str();
     const auto klass = env->FindClass(c_str);
@@ -93,7 +93,7 @@ jclass util::get_klass(JNIEnv *env, const std::string &name)
     return klass;
 }
 
-std::string util::get_string(JNIEnv *env, const jstring &string, const bool release)
+std::string znb_kit::get_string(JNIEnv *env, const jstring &string, const bool release)
 {
     const char *key = env->GetStringUTFChars(string, nullptr);
 
@@ -118,7 +118,7 @@ std::string util::get_string(JNIEnv *env, const jstring &string, const bool rele
     return str;
 }
 
-void util::delete_references(JNIEnv *env, const std::vector<jobject> &references)
+void znb_kit::delete_references(JNIEnv *env, const std::vector<jobject> &references)
 {
     for (const auto &reference : references)
     {
@@ -126,7 +126,7 @@ void util::delete_references(JNIEnv *env, const std::vector<jobject> &references
     }
 }
 
-std::vector<std::string> util::get_parameters(JNIEnv *env, const jobject &method)
+std::vector<std::string> znb_kit::get_parameters(JNIEnv *env, const jobject &method)
 {
     if (method == nullptr)
     {
@@ -134,14 +134,14 @@ std::vector<std::string> util::get_parameters(JNIEnv *env, const jobject &method
         return {};
     }
 
-    const auto getParameterTypes_method_id  = get_method_id(env, "java/lang/reflect/Method", "getParameterTypes", "()[Ljava/lang/Class;", false);
+    const auto getParameterTypes_method_id  = znb_kit::get_method_id(env, "java/lang/reflect/Method", "getParameterTypes", "()[Ljava/lang/Class;", false);
 
     if (getParameterTypes_method_id == nullptr)
     {
         return {};
     }
 
-    const auto getTypeName_method_id = get_method_id(env, "java/lang/Class", "getTypeName", "()Ljava/lang/String;", false);
+    const auto getTypeName_method_id = znb_kit::get_method_id(env, "java/lang/Class", "getTypeName", "()Ljava/lang/String;", false);
 
     if (getTypeName_method_id == nullptr)
     {
@@ -182,7 +182,7 @@ std::vector<std::string> util::get_parameters(JNIEnv *env, const jobject &method
             throw std::runtime_error("Unable to get element from array");
         }
 
-        const auto key = get_string(env, jstr);
+        const auto key = znb_kit::get_string(env, jstr);
         methods[i] = key;
 
         env->DeleteLocalRef(jstr);
@@ -194,7 +194,7 @@ std::vector<std::string> util::get_parameters(JNIEnv *env, const jobject &method
     return methods;
 }
 
-bool util::compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2)
+bool znb_kit::compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2)
 {
     if (v1.size() != v2.size()) {
         return false;

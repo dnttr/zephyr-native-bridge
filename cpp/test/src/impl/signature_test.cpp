@@ -19,6 +19,8 @@
  * It is a placeholder for the actual test implementation.
  */
 
+using namespace znb_kit;
+
 struct method_proxy_fixture {
     std::unique_ptr<klass_signature> klass;
 

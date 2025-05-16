@@ -4,7 +4,7 @@
 
 #include "ZNBKit/vm_object.hpp"
 
-JNIEnv * vm_object::get_env() const
+JNIEnv *znb_kit::vm_object::get_env() const
 {
     JNIEnv *env = nullptr;
 
