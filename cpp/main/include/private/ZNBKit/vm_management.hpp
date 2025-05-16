@@ -10,7 +10,7 @@
 #include <optional>
 #include <string>
 
-#include "vm_object.hpp"
+#include "ZNBKit/vm_object.hpp"
 
 class vm_management
 {

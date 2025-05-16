@@ -37,14 +37,19 @@ function(_prepare_jvm_toolset)
         message(FATAL_ERROR "JNI OS specific header not found.")
     endif ()
 
+    # Add JNI include directories to both the main library and tests
+    target_include_directories(znb PRIVATE ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC})
     target_include_directories(znb_tests PRIVATE ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC})
+
+    # Link znb library with JNI
+    target_link_libraries(znb PRIVATE ${JNI_LIBRARIES})
 endfunction()
 
 function(prepare_dependencies)
     set(JNI_LIB ${JNI_LIBRARIES})
     set(CATCH_2_LIB Catch2::Catch2)
 
-    set(LIB_LIST ${JNI_LIB} ${CATCH_2_LIB} PARENT_SCOPE)
+    set(LIB_LIST ${CATCH_2_LIB} PARENT_SCOPE)
 
     _prepare_test_lib()
     _prepare_jvm_toolset()

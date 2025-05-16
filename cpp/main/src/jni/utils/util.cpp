@@ -2,12 +2,24 @@
 // Created by Damian Netter on 12/05/2025.
 //
 
-#include "jni/utils/util.hpp"
+#include "ZNBKit/jni/utils/util.hpp"
 
 #include <algorithm>
 #include <unordered_set>
 
-#include "debug.hpp"
+#include "ZNBKit/debug.hpp"
+
+bool look_for_exceptions(JNIEnv *env)
+{
+    if (env->ExceptionCheck()) {
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return true;
+    }
+
+    return false;
+}
 
 jmethodID util::get_method_id(JNIEnv *env, const jclass &klass, const std::string &method_name,
                               const std::string &signature, const bool is_static)
@@ -21,9 +33,9 @@ jmethodID util::get_method_id(JNIEnv *env, const jclass &klass, const std::strin
 }
 
 jmethodID util::get_method_id(JNIEnv *env, const std::string &klass_name, const std::string &method_name,
-    const std::string &signature, bool is_static)
+    const std::string &signature, const bool is_static)
 {
-    const auto klass = env->FindClass(klass_name.c_str());
+    const auto klass = get_klass(env, klass_name);
 
     if (is_static)
     {
@@ -43,6 +55,12 @@ std::vector<jobject> util::get_methods(JNIEnv *env, const jclass &clazz)
     }
 
     const auto array = reinterpret_cast<jobjectArray>(env->CallObjectMethod(clazz, method_id));
+
+    if (look_for_exceptions(env))
+    {
+        throw std::runtime_error("Unable to get methods from class");
+    }
+
     const auto array_size = env->GetArrayLength(array);
 
     std::vector<jobject> methods(array_size);
@@ -50,6 +68,11 @@ std::vector<jobject> util::get_methods(JNIEnv *env, const jclass &clazz)
     for (int i = 0; i < array_size; ++i)
     {
         methods[i] = env->GetObjectArrayElement(array, i);
+
+        if (look_for_exceptions(env))
+        {
+            throw std::runtime_error("Unable to get method from array");
+        }
     }
 
     env->DeleteLocalRef(array);
@@ -62,11 +85,9 @@ jclass util::get_klass(JNIEnv *env, const std::string &name)
     const char *c_str = name.c_str();
     const auto klass = env->FindClass(c_str);
 
-    if (klass == nullptr)
+    if (look_for_exceptions(env))
     {
-        env->ExceptionClear();
-        env->ThrowNew(env->FindClass("java/lang/ClassNotFound"), c_str);
-        throw std::invalid_argument("Unable to find class '" + name + "'");
+        throw std::runtime_error("Unable to find class '" + name + "'");
     }
 
     return klass;
@@ -75,6 +96,11 @@ jclass util::get_klass(JNIEnv *env, const std::string &name)
 std::string util::get_string(JNIEnv *env, const jstring &string, const bool release)
 {
     const char *key = env->GetStringUTFChars(string, nullptr);
+
+    if (look_for_exceptions(env))
+    {
+        throw std::runtime_error("Unable to get string from string");
+    }
 
     if (key == nullptr)
     {
@@ -123,6 +149,12 @@ std::vector<std::string> util::get_parameters(JNIEnv *env, const jobject &method
     }
 
     const auto array = reinterpret_cast<jobjectArray>(env->CallObjectMethod(method, getParameterTypes_method_id));
+
+    if (look_for_exceptions(env))
+    {
+        throw std::runtime_error("Unable to get parameter types");
+    }
+
     const auto array_size = env->GetArrayLength(array);
 
     if (array == nullptr)
@@ -137,7 +169,19 @@ std::vector<std::string> util::get_parameters(JNIEnv *env, const jobject &method
     for (int i = 0; i < array_size; ++i)
     {
         const auto element = env->GetObjectArrayElement(array, i);
+
+        if (look_for_exceptions(env))
+        {
+            throw std::runtime_error("Unable to get element from array");
+        }
+
         const auto jstr = reinterpret_cast<jstring>(env->CallObjectMethod(element, getTypeName_method_id));
+
+        if (look_for_exceptions(env))
+        {
+            throw std::runtime_error("Unable to get element from array");
+        }
+
         const auto key = get_string(env, jstr);
         methods[i] = key;
 

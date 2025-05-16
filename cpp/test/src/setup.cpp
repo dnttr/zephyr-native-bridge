@@ -1,9 +1,9 @@
+#include "ZNBKit/setup.hpp"
+
 #include <iostream>
 
-#include "cpp/test/include/setup.hpp"
-
-#include "debug.hpp"
-#include "vm_management.hpp"
+#include "ZNBKit/debug.hpp"
+#include "ZNBKit/vm_management.hpp"
 
 int main(const int argc, char* argv[]) {
     Catch::Session session;

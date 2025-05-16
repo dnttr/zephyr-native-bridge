@@ -4,11 +4,11 @@
 
 #pragma once
 
-#define ZNI_DST "@ZNI_DST@"
-
 #include <catch2/catch_all.hpp>
 
-#include "vm_object.hpp"
+#include "ZNBKit/vm_object.hpp"
+
+#include "config.hpp"
 
 inline std::unique_ptr<vm_object> vm = nullptr;
 

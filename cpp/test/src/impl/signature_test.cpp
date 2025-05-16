@@ -2,10 +2,10 @@
 // Created by Damian Netter on 11/05/2025.
 //
 
-#include "setup.hpp"
-#include "jni/instance.hpp"
-#include "jni/signatures/method/string_method.hpp"
-#include "jni/signatures/method/void_method.hpp"
+#include "ZNBKit/setup.hpp"
+#include "ZNBKit/jni/instance.hpp"
+#include "ZNBKit/jni/signatures/method/string_method.hpp"
+#include "ZNBKit/jni/signatures/method/void_method.hpp"
 
 /*
  * This test is designed to test the method proxy and its ability to

@@ -7,8 +7,8 @@
 #include <jni.h>
 #include <stdexcept>
 
-#include "vm_object.hpp"
-#include "signatures/method/void_method.hpp"
+#include "ZNBKit/vm_object.hpp"
+#include "ZNBKit/jni/signatures/method/void_method.hpp"
 
 class instance {
     jobject object;

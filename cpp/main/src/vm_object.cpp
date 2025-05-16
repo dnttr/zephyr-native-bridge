@@ -2,7 +2,7 @@
 // Created by Damian Netter on 12/05/2025.
 //
 
-#include "vm_object.hpp"
+#include "ZNBKit/vm_object.hpp"
 
 JNIEnv * vm_object::get_env() const
 {

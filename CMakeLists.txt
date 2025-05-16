@@ -1,23 +1,39 @@
-# CMakeLists.txt
 cmake_minimum_required(VERSION 3.31.6)
-project(znb LANGUAGES C CXX)
+
+project(Zephyr-Native-Bridge LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Include platform and dependencies
 include(${CMAKE_SOURCE_DIR}/tools/Platform.cmake)
 include(${CMAKE_SOURCE_DIR}/tools/Dependencies.cmake)
 
 add_compile_definitions(DEBUG)
 
-# Source files
+set(MAIN_HEADER_DEST "${CMAKE_BINARY_DIR}/include")
+set(TEST_HEADER_DEST "${CMAKE_BINARY_DIR}/test_include")
+
+file(MAKE_DIRECTORY ${MAIN_HEADER_DEST})
+file(MAKE_DIRECTORY ${TEST_HEADER_DEST})
+
 set(SOURCE_FILES
         ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_object.cpp
         ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_management.cpp
         ${CMAKE_SOURCE_DIR}/cpp/main/src/jvmti/jvmti_object.cpp
         ${CMAKE_SOURCE_DIR}/cpp/main/src/jni/utils/util.cpp
 )
+
+add_library(znb SHARED ${SOURCE_FILES})
+
+target_include_directories(znb
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/cpp/main/include/private
+        PUBLIC
+        ${CMAKE_SOURCE_DIR}/cpp/main/include/public
+        ${MAIN_HEADER_DEST}
+)
+
+add_dependencies(znb copy_main_headers)
 
 set(TEST_FILES
         ${CMAKE_SOURCE_DIR}/cpp/test/src/setup.cpp
@@ -29,40 +45,9 @@ if (EXISTS ${ZNI_DST})
     message(STATUS "ZNI jar file found: ${ZNI_DST}")
 else()
     message(FATAL_ERROR "ZNI jar file not found: ${ZNI_DST}. Please compile the ZNI library first. (Java 23+ required)")
-endif ()
-
-configure_file(
-        ${CMAKE_SOURCE_DIR}/cpp/test/include/setup.hpp
-        ${CMAKE_BINARY_DIR}/cpp/test/include/setup.hpp
-        @ONLY
-)
-
-define_platform()  # from Platform.cmake
-
-# Rust build settings
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(RUST_PROFILE dev)
-    set(RUST_BUILD_DIR debug)
-else()
-    set(RUST_PROFILE release)
-    set(RUST_BUILD_DIR release)
 endif()
 
-set(RUST_LIB_NAME "lib${PROJECT_NAME}.${OUTPUT_EXTENSION}")
-set(RUST_OUT       "${CMAKE_SOURCE_DIR}/rust/target/${RUST_BUILD_DIR}/${RUST_LIB_NAME}")
-set(RUST_DST       "${CMAKE_BINARY_DIR}/${RUST_BUILD_DIR}/${RUST_LIB_NAME}")
-
-file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/${RUST_BUILD_DIR}")
-
-# Build Rust staticlib
-add_custom_command(
-        OUTPUT ${RUST_DST}
-        COMMAND cargo build --manifest-path=${CMAKE_SOURCE_DIR}/rust/Cargo.toml --profile ${RUST_PROFILE}
-        COMMAND ${CMAKE_COMMAND} -E copy ${RUST_OUT} ${RUST_DST}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/rust
-        COMMENT "Building Rust static library"
-)
-add_custom_target(rust_znb DEPENDS ${RUST_DST})
+define_platform()
 
 file(GLOB_RECURSE TEST_LIST "${CMAKE_SOURCE_DIR}/cpp/test/src/impl/*.cpp")
 
@@ -75,21 +60,69 @@ else()
     message(WARNING "No test files found in ${CMAKE_SOURCE_DIR}/cpp/test/src/impl/")
 endif()
 
-# Create Catch2-based test executable
-add_executable(znb_tests ${SOURCE_FILES} ${TEST_FILES} ${TEST_LIST})
-prepare_dependencies()
-add_dependencies(znb_tests rust_znb)
-target_include_directories(znb_tests PUBLIC
-        ${CMAKE_BINARY_DIR}
-        ${CMAKE_SOURCE_DIR}/cpp/main/include
-        ${CMAKE_SOURCE_DIR}/cpp/test/include
-)
-target_link_libraries(znb_tests PRIVATE ${LIB_LIST} ${RUST_DST})
+file(GLOB_RECURSE MAIN_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/main/include/public/*.hpp")
+file(GLOB_RECURSE TEST_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/test/include/*.hpp")
 
-# Enable and register testing
+add_custom_target(copy_main_headers ALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${MAIN_HEADER_DEST}/ZNBKit"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/cpp/main/include/public"
+        "${MAIN_HEADER_DEST}/ZNBKit"
+        DEPENDS ${MAIN_HEADER_FILES}
+        COMMENT "Copying main headers to build directory"
+)
+
+add_custom_target(copy_test_headers ALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${TEST_HEADER_DEST}"
+        COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_DIR="${CMAKE_SOURCE_DIR}/cpp/test/include"
+        -DDEST_DIR="${TEST_HEADER_DEST}"
+        -P "${CMAKE_SOURCE_DIR}/tools/Copy.cmake"
+        DEPENDS ${TEST_HEADER_FILES}
+        COMMENT "Copying test headers to build directory (excluding config.hpp)"
+)
+
+add_custom_target(process_config ALL
+        COMMAND ${CMAKE_COMMAND} -E echo "Processing config.hpp with ZNI_DST=${ZNI_DST}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${TEST_HEADER_DEST}/ZNBKit"
+        COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_FILE="${CMAKE_SOURCE_DIR}/cpp/test/include/ZNBKit/config.hpp"
+        -DDEST_FILE="${TEST_HEADER_DEST}/ZNBKit/config.hpp"
+        -DZNI_DST="${ZNI_DST}"
+        -P "${CMAKE_SOURCE_DIR}/tools/Config.cmake"
+        COMMENT "Configuring test config.hpp with ZNI_DST path"
+)
+
+# Create test executable that links against our library
+add_executable(znb_tests ${TEST_FILES} ${TEST_LIST})
+prepare_dependencies()
+
+# Set the dependencies in the correct order
+add_dependencies(process_config copy_test_headers)
+add_dependencies(znb_tests copy_main_headers process_config)
+
+target_include_directories(znb_tests
+        PRIVATE
+        ${MAIN_HEADER_DEST}
+        ${TEST_HEADER_DEST}
+        ${CMAKE_SOURCE_DIR}/cpp/main/include/private
+)
+
+target_link_libraries(znb_tests PRIVATE znb ${LIB_LIST})
+
 enable_testing()
+
 add_test(NAME run_all_tests
         COMMAND ${CMAKE_COMMAND} -E env
         JAVA_TOOLSET=${JAVA_TEST_TOOLSET}
-        java -jar ${ZNI_DST} --library-path=${CMAKE_BINARY_DIR}/${RUST_BUILD_DIR}
+        java -jar ${ZNI_DST} --library-path=${CMAKE_BINARY_DIR}
         && ${CMAKE_BINARY_DIR}/znb_tests)
+
+install(TARGETS znb
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin)
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/cpp/main/include/public/
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.hpp")

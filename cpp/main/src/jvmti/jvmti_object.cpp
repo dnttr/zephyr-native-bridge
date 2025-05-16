@@ -2,13 +2,16 @@
 // Created by Damian Netter on 12/05/2025.
 //
 
-#include "jvmti/jvmti_object.hpp"
+#include "ZNBKit/jvmti/jvmti_object.hpp"
 
 #include <algorithm>
 #include <map>
 #include <unordered_map>
 
-#include "debug.hpp"
+#include "ZNBKit/debug.hpp"
+#include "ZNBKit/jni/signatures/klass_signature.hpp"
+#include "ZNBKit/jni/signatures/method_signature.hpp"
+#include "ZNBKit/jni/utils/util.hpp"
 
 template <typename T>
 method_signature<T> jvmti_object::get_method_signature(JNIEnv *env, const jobject &method)

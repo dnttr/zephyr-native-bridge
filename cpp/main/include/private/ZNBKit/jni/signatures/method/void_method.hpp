@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "jni/signatures/method_signature.hpp"
+#include "ZNBKit/jni/signatures/method_signature.hpp"
 
 class void_method final : public method_signature<void>
 {

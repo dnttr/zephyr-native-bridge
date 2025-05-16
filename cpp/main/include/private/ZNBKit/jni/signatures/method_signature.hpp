@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "jni/signatures/klass_signature.hpp"
+#include "ZNBKit/jni/signatures/klass_signature.hpp"
 
 template <typename T>
 class method_signature

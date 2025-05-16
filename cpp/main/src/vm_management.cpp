@@ -2,9 +2,9 @@
 // Created by Damian Netter on 12/05/2025.
 //
 
-#include "vm_management.hpp"
+#include "ZNBKit/vm_management.hpp"
 
-#include "debug.hpp"
+#include "ZNBKit/debug.hpp"
 
 std::unique_ptr<vm_object> vm_management::create_and_wrap_vm(const std::string &classpath)
 {
@@ -89,7 +89,7 @@ std::pair<JavaVM *, JNIEnv *> vm_management::create_vm(const vm_data &vm_data)
 
         if (classpath.empty() || !std::filesystem::exists(classpath))
         {
-            throw std::invalid_argument("Unable to determine classpath.");
+            throw std::invalid_argument("Unable to determine classpath. [" + classpath + "]");
         }
 
         classpath_option = "-Djava.class.path=" + classpath;

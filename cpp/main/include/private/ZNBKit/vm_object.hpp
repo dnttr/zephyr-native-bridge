@@ -8,7 +8,7 @@
 #include <optional>
 #include <stdexcept>
 
-#include "jvmti/jvmti_object.hpp"
+#include "ZNBKit/jvmti/jvmti_object.hpp"
 
 class vm_object {
     JavaVM *jvm;

@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "jni/signatures/method_signature.hpp"
+#include "ZNBKit/jni/signatures/method_signature.hpp"
 
 struct Reference
 {
