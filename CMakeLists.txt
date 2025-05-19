@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.31.6)
 
-project(Zephyr-Native-Bridge LANGUAGES C CXX)
+project(zephyr-native-bridge LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,7 +23,7 @@ set(SOURCE_FILES
         ${CMAKE_SOURCE_DIR}/cpp/main/src/jni/utils/util.cpp
 )
 
-add_library(znb SHARED ${SOURCE_FILES})
+add_library(znb STATIC ${SOURCE_FILES})
 
 target_include_directories(znb
         PUBLIC
@@ -91,11 +91,9 @@ add_custom_target(process_config ALL
         COMMENT "Configuring test config.hpp with ZNI_DST path"
 )
 
-# Create test executable that links against our library
 add_executable(znb_tests ${TEST_FILES} ${TEST_LIST})
 prepare_dependencies()
 
-# Set the dependencies in the correct order
 add_dependencies(process_config copy_test_headers)
 add_dependencies(znb_tests copy_main_headers process_config)
 
@@ -106,7 +104,7 @@ target_include_directories(znb_tests
         ${CMAKE_SOURCE_DIR}/cpp/main/include/private
 )
 
-target_link_libraries(znb_tests PRIVATE znb ${LIB_LIST})
+target_link_libraries(znb_tests PUBLIC znb ${LIB_LIST})
 
 enable_testing()
 

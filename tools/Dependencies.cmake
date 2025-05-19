@@ -38,11 +38,11 @@ function(_prepare_jvm_toolset)
     endif ()
 
     # Add JNI include directories to both the main library and tests
-    target_include_directories(znb PRIVATE ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC})
+    target_include_directories(znb PUBLIC ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC} )
     target_include_directories(znb_tests PRIVATE ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC})
 
     # Link znb library with JNI
-    target_link_libraries(znb PRIVATE ${JNI_LIBRARIES})
+    target_link_libraries(znb PUBLIC ${JNI_LIBRARIES})
 endfunction()
 
 function(prepare_dependencies)

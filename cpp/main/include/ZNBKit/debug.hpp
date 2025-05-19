@@ -6,16 +6,15 @@
 
 #include <iostream>
 
+inline std::string get_path(const std::string& filePath) {
+    const std::string sep = "/cpp/";
 
-    inline std::string get_path(const std::string& filePath) {
-        const std::string sep = "/cpp/";
-
-        if (const size_t pos = filePath.find(sep); pos != std::string::npos) {
-            return filePath.substr(pos + sep.length());
-        }
-
-        return "";
+    if (const size_t pos = filePath.find(sep); pos != std::string::npos) {
+        return filePath.substr(pos + sep.length());
     }
+
+    return "";
+}
 
 #ifdef DEBUG
 #define debug_print(msg) \
