@@ -103,7 +103,7 @@ add_test(NAME run_all_tests
         COMMAND ${CMAKE_COMMAND} -E env
         JAVA_TOOLSET=${JAVA_TEST_TOOLSET}
         java -jar ${ZNI_DST} --library-path=${CMAKE_BINARY_DIR}
-        && ${CMAKE_BINARY_DIR}/znb_tests)
+        && ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-tests)
 
 install(TARGETS ${PROJECT_NAME}
         LIBRARY DESTINATION lib
@@ -117,7 +117,5 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/cpp/main/include/
 set_target_properties(${PROJECT_NAME} PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
         OUTPUT_NAME "znb"
-        VERSION 1.0.0
-        SOVERSION 1
         INSTALL_RPATH "@loader_path"
 )

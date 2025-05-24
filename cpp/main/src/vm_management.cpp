@@ -31,28 +31,38 @@ std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(c
 
     if (jvmti_data.has_value())
     {
-        debug_print("JVMTI initialization requested.");
-        const auto data = jvmti_data.value();
-
-        jvmti = get_jvmti(jvm, data.version);
-
-        const auto capabilities = get_capabilities(jvmti, data);
-
-        debug_print("JVMTI capabilities requested.");
-
-        if (jvmti->AddCapabilities(&capabilities) != JVMTI_ERROR_NONE)
-        {
-            throw std::runtime_error("Failed to add jvmti capabilities.");
-        }
-
-        debug_print("JVMTI capabilities added.");
-        debug_print("JVMTI initialization completed.");
-        debug_print("------------------------------");
+        jvmti = get_jvmti(jvm, jvmti_data.value());
+    }
+    else
+    {
+        debug_print("JVMTI initialization skipped.");
     }
 
     debug_print("Finished initialization of vm.");
 
     return std::make_unique<vm_object>(vm_data.version, jvm, jvmti, jni);
+}
+
+std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::wrap_vm(JavaVM *jvm, const std::optional<jvmti_data> jvmti_data)
+{
+    if (jvm == nullptr)
+    {
+        throw std::invalid_argument("JavaVM is null.");
+    }
+
+    JNIEnv *jni = nullptr;
+    if (jvm->GetEnv(reinterpret_cast<void **>(&jni), JNI_VERSION_21) != JNI_OK)
+    {
+        throw std::runtime_error("Failed to get JNIEnv from JavaVM.");
+    }
+
+    jvmtiEnv *jvmti = nullptr;
+    if (jvmti_data.has_value())
+    {
+        jvmti = get_jvmti(jvm, jvmti_data.value());
+    }
+
+    return std::make_unique<vm_object>(JNI_VERSION_21, jvm, jvmti, jni);
 }
 
 jvmtiCapabilities znb_kit::vm_management::get_capabilities(const jvmtiEnv *jvmti, const jvmti_data data)
@@ -122,6 +132,30 @@ jvmtiEnv * znb_kit::vm_management::get_jvmti(JavaVM *vm, const int version)
     {
         throw std::runtime_error("Failed to get jvmti.");
     }
+
+    return jvmti;
+}
+
+jvmtiEnv * znb_kit::vm_management::get_jvmti(JavaVM *vm, const jvmti_data data)
+{
+    jvmtiEnv *jvmti = nullptr;
+
+    debug_print("JVMTI initialization requested.");
+
+    jvmti = get_jvmti(vm, data.version);
+
+    const auto capabilities = get_capabilities(jvmti, data);
+
+    debug_print("JVMTI capabilities requested.");
+
+    if (jvmti->AddCapabilities(&capabilities) != JVMTI_ERROR_NONE)
+    {
+        throw std::runtime_error("Failed to add jvmti capabilities.");
+    }
+
+    debug_print("JVMTI capabilities added.");
+    debug_print("JVMTI initialization completed.");
+    debug_print("------------------------------");
 
     return jvmti;
 }
