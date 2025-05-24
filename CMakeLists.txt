@@ -8,13 +8,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(${CMAKE_SOURCE_DIR}/tools/Platform.cmake)
 include(${CMAKE_SOURCE_DIR}/tools/Dependencies.cmake)
 
-add_compile_definitions(DEBUG)
-
 set(MAIN_HEADER_DEST "${CMAKE_BINARY_DIR}/include")
 set(TEST_HEADER_DEST "${CMAKE_BINARY_DIR}/test_include")
 
 file(MAKE_DIRECTORY ${MAIN_HEADER_DEST})
 file(MAKE_DIRECTORY ${TEST_HEADER_DEST})
+
+file(GLOB_RECURSE MAIN_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/main/include/*.hpp")
+file(GLOB_RECURSE TEST_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/test/include/*.hpp")
+
+file(GLOB_RECURSE TEST_LIST "${CMAKE_SOURCE_DIR}/cpp/test/src/impl/*.cpp")
 
 set(SOURCE_FILES
         ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_object.cpp
@@ -23,31 +26,22 @@ set(SOURCE_FILES
         ${CMAKE_SOURCE_DIR}/cpp/main/src/jni/utils/util.cpp
 )
 
-add_library(znb STATIC ${SOURCE_FILES})
+set(TEST_FILES
+        ${CMAKE_SOURCE_DIR}/cpp/test/src/setup.cpp
+)
 
-target_include_directories(znb
+look_for_interface()
+define_platform()
+
+add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+
+target_include_directories(${PROJECT_NAME}
         PUBLIC
         ${CMAKE_SOURCE_DIR}/cpp/main/include
         ${MAIN_HEADER_DEST}
 )
 
-add_dependencies(znb copy_main_headers)
-
-set(TEST_FILES
-        ${CMAKE_SOURCE_DIR}/cpp/test/src/setup.cpp
-)
-
-set(ZNI_DST "${CMAKE_SOURCE_DIR}/external/zephyr-native-interface.jar")
-
-if (EXISTS ${ZNI_DST})
-    message(STATUS "ZNI jar file found: ${ZNI_DST}")
-else()
-    message(FATAL_ERROR "ZNI jar file not found: ${ZNI_DST}. Please compile the ZNI library first. (Java 23+ required)")
-endif()
-
-define_platform()
-
-file(GLOB_RECURSE TEST_LIST "${CMAKE_SOURCE_DIR}/cpp/test/src/impl/*.cpp")
+add_dependencies(${PROJECT_NAME} copy_main_headers)
 
 if(TEST_LIST)
     message(STATUS "Found test files:")
@@ -57,9 +51,6 @@ if(TEST_LIST)
 else()
     message(WARNING "No test files found in ${CMAKE_SOURCE_DIR}/cpp/test/src/impl/")
 endif()
-
-file(GLOB_RECURSE MAIN_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/main/include/*.hpp")
-file(GLOB_RECURSE TEST_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/test/include/*.hpp")
 
 add_custom_target(copy_main_headers ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory "${MAIN_HEADER_DEST}/ZNBKit"
@@ -91,22 +82,22 @@ add_custom_target(process_config ALL
         COMMENT "Configuring test config.hpp with ZNI_DST path"
 )
 
-add_executable(znb_tests ${TEST_FILES} ${TEST_LIST})
+add_executable(${PROJECT_NAME}-tests ${TEST_FILES} ${TEST_LIST})
+
 prepare_dependencies()
+enable_testing()
 
 add_dependencies(process_config copy_test_headers)
-add_dependencies(znb_tests copy_main_headers process_config)
+add_dependencies(${PROJECT_NAME}-tests copy_main_headers process_config)
 
-target_include_directories(znb_tests
+target_include_directories(${PROJECT_NAME}-tests
         PRIVATE
         ${MAIN_HEADER_DEST}
         ${TEST_HEADER_DEST}
         ${CMAKE_SOURCE_DIR}/cpp/main/include/private
 )
 
-target_link_libraries(znb_tests PUBLIC znb ${LIB_LIST})
-
-enable_testing()
+target_link_libraries(${PROJECT_NAME}-tests PUBLIC ${PROJECT_NAME} ${LIB_LIST})
 
 add_test(NAME run_all_tests
         COMMAND ${CMAKE_COMMAND} -E env
@@ -114,7 +105,7 @@ add_test(NAME run_all_tests
         java -jar ${ZNI_DST} --library-path=${CMAKE_BINARY_DIR}
         && ${CMAKE_BINARY_DIR}/znb_tests)
 
-install(TARGETS znb
+install(TARGETS ${PROJECT_NAME}
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin)
@@ -122,3 +113,11 @@ install(TARGETS znb
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/cpp/main/include/
         DESTINATION include
         FILES_MATCHING PATTERN "*.hpp")
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+        OUTPUT_NAME "znb"
+        VERSION 1.0.0
+        SOVERSION 1
+        INSTALL_RPATH "@loader_path"
+)

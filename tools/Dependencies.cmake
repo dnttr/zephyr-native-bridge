@@ -8,7 +8,7 @@ function(_prepare_test_lib)
     endif ()
 
     message(STATUS "Found Catch2.")
-    target_include_directories(znb_tests PRIVATE ${Catch2_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME}-tests PRIVATE ${Catch2_INCLUDE_DIRS})
 
     include(CTest)
     include(Catch)
@@ -38,11 +38,23 @@ function(_prepare_jvm_toolset)
     endif ()
 
     # Add JNI include directories to both the main library and tests
-    target_include_directories(znb PUBLIC ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC} )
-    target_include_directories(znb_tests PRIVATE ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC})
+    target_include_directories(${PROJECT_NAME} PUBLIC ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC} )
+    target_include_directories(${PROJECT_NAME}-tests PRIVATE ${JNI_INCLUDE_DIRS} ${JNI_INCLUDE_OS_SPECIFIC})
 
     # Link znb library with JNI
-    target_link_libraries(znb PUBLIC ${JNI_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${JNI_LIBRARIES})
+endfunction()
+
+function(look_for_interface)
+    set(PATH "${CMAKE_SOURCE_DIR}/external/zephyr-native-interface.jar")
+
+    if (EXISTS ${PATH})
+        message(STATUS "ZNI jar file found: ${PATH}")
+    else()
+        message(FATAL_ERROR "ZNI jar file not found: ${PATH}. Please compile the ZNI library first. (Java 23+ required)")
+    endif()
+
+    set(ZNI_DST ${PATH} PARENT_SCOPE)
 endfunction()
 
 function(prepare_dependencies)
