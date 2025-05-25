@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <iostream>
 #include <jni.h>
 #include <string>
 
