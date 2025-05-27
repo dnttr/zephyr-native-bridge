@@ -50,9 +50,8 @@ namespace znb_kit
         instance(const instance &other) = delete;
         instance& operator=(const instance &other) = delete;
 
-        instance(instance &&other) noexcept: object(other.object), vm(other.vm)
+        instance(instance &&other) noexcept: object(std::exchange(other.object, nullptr)), vm(other.vm)
         {
-            other.object = nullptr;
         }
 
         auto operator=(instance &&other) noexcept -> instance &
@@ -61,9 +60,8 @@ namespace znb_kit
                 return *this;
 
             cleanup();
-            object = other.object;
+            object = std::exchange(other.object, nullptr);
             vm = other.vm;
-            other.object = nullptr;
 
             return *this;
         }

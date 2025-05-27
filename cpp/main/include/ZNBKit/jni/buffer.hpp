@@ -6,8 +6,6 @@
 
 #include <jni.h>
 #include <ranges>
-#include <stdexcept>
-#include <utility>
 
 namespace znb_kit
 {

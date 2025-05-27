@@ -8,7 +8,6 @@
 #include <optional>
 #include <stdexcept>
 
-#include "debug.hpp"
 #include "ZNBKit/jvmti/jvmti_object.hpp"
 
 namespace znb_kit
@@ -27,7 +26,7 @@ namespace znb_kit
         {
             if (jvm == nullptr || jni == nullptr)
             {
-                throw std::invalid_argument("vm or env is null");
+                throw std::invalid_argument("jvm or jni is null");
             }
 
             if (jvmti_env != nullptr) {
@@ -35,9 +34,43 @@ namespace znb_kit
             }
         }
 
-        [[nodiscard]] jvmti_object* get_jvmti() const
+        vm_object(const vm_object &) = delete;
+        vm_object &operator=(const vm_object &) = delete;
+
+        vm_object(vm_object &&other) noexcept :
+            jvm(std::exchange(other.jvm, nullptr)),
+            jvmti(other.jvmti),
+            jni(std::exchange(other.jni, nullptr)),
+            version(other.version)
         {
-            return jvmti.has_value() ? const_cast<jvmti_object*>(&jvmti.value()) : nullptr;
+        }
+
+        vm_object &operator=(vm_object &&other) noexcept
+        {
+            if (this != &other)
+            {
+                if (jvm != nullptr)
+                {
+                    jvm->DestroyJavaVM();
+                }
+
+                version = other.version;
+                jvm = std::exchange(other.jvm, nullptr);
+                jni = std::exchange(other.jni, nullptr);
+                jvmti = other.jvmti;
+            }
+
+            return *this;
+        }
+
+        [[nodiscard]] std::optional<std::reference_wrapper<const jvmti_object>> get_jvmti() const
+        {
+            if (jvmti.has_value())
+            {
+                return std::ref(jvmti.value());
+            }
+
+            return std::nullopt;
         }
 
         [[nodiscard]] JavaVM *get_owner() const
