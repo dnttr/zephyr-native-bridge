@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <functional>
 #include <jvmti.h>
 #include <ranges>
 #include <stdexcept>
@@ -16,11 +17,19 @@ namespace znb_kit
 {
     struct Reference
     {
-        std::optional<void *> func_ptr;
+        void *func_ptr;
         std::vector<std::string> parameters;
 
-        Reference(void *func_ptr, const std::vector<std::string> &params): func_ptr(func_ptr), parameters(params)
+        template<typename Func>
+        Reference(Func f, const std::vector<std::string> &params)
+            :   func_ptr(reinterpret_cast<void *>(f)),
+                parameters(params)
         {
+        }
+
+        bool has_func() const
+        {
+            return func_ptr != nullptr;
         }
     };
 
@@ -30,6 +39,7 @@ namespace znb_kit
 
         template<typename T = jobject>
         method_signature<T> get_method_signature(JNIEnv *env, const jobject &method);
+
         template <class T>
         std::vector<method_signature<T>> look_for_method_signatures(JNIEnv *env, const jclass &klass);
 
@@ -41,8 +51,25 @@ namespace znb_kit
         {
             if (jvmti == nullptr)
             {
-                throw std::runtime_error("JVMTI is null");
+                throw std::invalid_argument("JVMTI environment cannot be null");
             }
+        }
+
+        jvmti_object (const jvmti_object &) = delete;
+        jvmti_object &operator=(const jvmti_object &) = delete;
+
+        jvmti_object (jvmti_object &&other) noexcept: jvmti(std::exchange(other.jvmti, nullptr))
+        {
+        }
+
+        jvmti_object &operator=(jvmti_object &&other) noexcept
+        {
+            if (this != &other)
+            {
+                jvmti = std::exchange(other.jvmti, nullptr);
+            }
+
+            return *this;
         }
 
         template <typename... T>

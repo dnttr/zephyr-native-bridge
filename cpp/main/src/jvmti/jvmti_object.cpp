@@ -128,7 +128,7 @@ std::vector<JNINativeMethod> create_mappings(const std::unordered_multimap<std::
         return JNINativeMethod{
             strdup(method.name.c_str()),
             strdup(method.signature.c_str()),
-            it->second.func_ptr
+            it->second.has_func() ? it->func_ptr : nullptr
         };
     })
     | std::ranges::views::filter([](const auto& opt) {
