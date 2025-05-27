@@ -13,21 +13,33 @@
 namespace znb_kit
 {
     class instance {
-        jobject object;
-        vm_object *vm;
+        jobject object{nullptr};
+        vm_object *vm{nullptr};
+
+        void cleanup()
+        {
+            if (object != nullptr && vm != nullptr)
+            {
+                vm->get_env()->DeleteGlobalRef(object);
+                object = nullptr;
+            }
+        }
 
     public:
 
         explicit instance(vm_object *vm, const void_method &method_signature, const std::vector<jvalue> &parameters): vm(vm)
         {
+            if (vm == nullptr)
+            {
+                throw std::invalid_argument("vm cannot be null");
+            }
+
             JNIEnv* env = vm->get_env();
 
-            const auto obj = env->NewObjectA(method_signature.get_owner(),method_signature.get_identity(), parameters.data());
+            const auto obj = env->NewObjectA(method_signature.get_owner(), method_signature.get_identity(), parameters.data());
 
             if (obj == nullptr) {
                 env->ExceptionClear();
-                env->ThrowNew(env->FindClass("java/lang/InstantiationException"),
-                              "Unable to create new instance");
                 throw std::runtime_error("Unable to create new instance");
             }
 
@@ -35,13 +47,30 @@ namespace znb_kit
             env->DeleteLocalRef(obj);
         }
 
+        instance(const instance &other) = delete;
+        instance& operator=(const instance &other) = delete;
+
+        instance(instance &&other) noexcept: object(other.object), vm(other.vm)
+        {
+            other.object = nullptr;
+        }
+
+        auto operator=(instance &&other) noexcept -> instance &
+        {
+            if (this == &other)
+                return *this;
+
+            cleanup();
+            object = other.object;
+            vm = other.vm;
+            other.object = nullptr;
+
+            return *this;
+        }
+
         ~instance()
         {
-            if (object != nullptr)
-            {
-                vm->get_env()->DeleteGlobalRef(object);
-                object = nullptr;
-            }
+            cleanup();
         }
 
         [[nodiscard]] jobject get_owner() const
