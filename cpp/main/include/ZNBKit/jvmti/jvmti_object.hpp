@@ -27,7 +27,7 @@ namespace znb_kit
         {
         }
 
-        bool has_func() const
+        [[nodiscard]] bool has_func() const
         {
             return func_ptr != nullptr;
         }

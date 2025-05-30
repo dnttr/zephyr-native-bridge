@@ -13,7 +13,8 @@ namespace znb_kit
     public:
         using method_signature::method_signature;
 
-        jlong invoke(const jobject &instance, std::vector<jvalue> &parameters) override {
+        jlong invoke(const jobject &instance, std::vector<jvalue> &parameters) override
+        {
             if (is_static) {
                 return env->CallStaticLongMethod(get_owner(), get_identity(), parameters.data());
             }

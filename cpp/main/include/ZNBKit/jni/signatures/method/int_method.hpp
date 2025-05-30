@@ -13,7 +13,8 @@ namespace znb_kit
     public:
         using method_signature::method_signature;
 
-        jint invoke(const jobject &instance, std::vector<jvalue> &parameters) override {
+        jint invoke(const jobject &instance, std::vector<jvalue> &parameters) override
+        {
             if (is_static) {
                 return env->CallStaticIntMethod(get_owner(), get_identity(), parameters.data());
             }

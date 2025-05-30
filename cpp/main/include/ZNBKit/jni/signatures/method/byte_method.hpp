@@ -13,7 +13,8 @@ namespace znb_kit
     public:
         using method_signature::method_signature;
 
-        jbyte invoke(const jobject &instance, std::vector<jvalue> &parameters) override {
+        jbyte invoke(const jobject &instance, std::vector<jvalue> &parameters) override
+        {
             if (is_static) {
                 return env->CallStaticByteMethod(get_owner(), get_identity(), parameters.data());
             }

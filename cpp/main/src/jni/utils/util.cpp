@@ -182,7 +182,7 @@ std::vector<std::string> znb_kit::get_parameters(JNIEnv *env, const jobject &met
             throw std::runtime_error("Unable to get element from array");
         }
 
-        const auto key = znb_kit::get_string(env, jstr);
+        const auto key = get_string(env, jstr);
         methods[i] = key;
 
         env->DeleteLocalRef(jstr);

@@ -39,7 +39,7 @@ namespace znb_kit
 
         vm_object(vm_object &&other) noexcept :
             jvm(std::exchange(other.jvm, nullptr)),
-            jvmti(other.jvmti),
+            jvmti(std::move(other.jvmti)),
             jni(std::exchange(other.jni, nullptr)),
             version(other.version)
         {
@@ -57,7 +57,7 @@ namespace znb_kit
                 version = other.version;
                 jvm = std::exchange(other.jvm, nullptr);
                 jni = std::exchange(other.jni, nullptr);
-                jvmti = other.jvmti;
+                jvmti = std::move(other.jvmti);
             }
 
             return *this;
