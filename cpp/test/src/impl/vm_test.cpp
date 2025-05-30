@@ -18,9 +18,10 @@ TEST_CASE("jni internal methods availability")
 
 TEST_CASE("jvmti internal methods availability")
 {
-    REQUIRE(vm->get_jvmti() != nullptr);
+    REQUIRE(vm->get_jvmti() != std::nullopt);
 
     int version;
-    vm->get_jvmti()->get_owner()->GetVersionNumber(&version);
+    const auto jvmti = vm->get_jvmti()->get().get_owner();
+    jvmti->GetVersionNumber(&version);
     REQUIRE(version > 0);
 }
