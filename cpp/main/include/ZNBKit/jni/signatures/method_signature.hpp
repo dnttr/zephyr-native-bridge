@@ -21,10 +21,6 @@ namespace znb_kit
         JNIEnv *env;
         jmethodID identity;
 
-        std::string name;
-        std::string signature;
-
-        std::optional<std::vector<std::string>> parameters;
         std::shared_ptr<klass_signature> owner;
 
         bool is_static;
@@ -41,6 +37,12 @@ namespace znb_kit
             return identity;
         }
     public:
+        //for now
+        std::string name;
+        std::string signature;
+
+        std::optional<std::vector<std::string>> parameters;
+
         virtual ~method_signature() = default;
 
         method_signature(JNIEnv *env, std::shared_ptr<klass_signature> owner, std::string &name, std::string &signature, std::optional<std::vector<std::string>> parameters, const bool is_static)

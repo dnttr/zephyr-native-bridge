@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.31.6)
 
 project(zephyr-native-bridge LANGUAGES C CXX)
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-diagnostics-show-template-tree")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU") # For GCC
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
+endif()
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -23,6 +29,7 @@ set(SOURCE_FILES
         ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_object.cpp
         ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_management.cpp
         ${CMAKE_SOURCE_DIR}/cpp/main/src/jvmti/jvmti_object.cpp
+        ${CMAKE_SOURCE_DIR}/cpp/main/src/jvmti/factory.cpp
         ${CMAKE_SOURCE_DIR}/cpp/main/src/jni/utils/util.cpp
 )
 

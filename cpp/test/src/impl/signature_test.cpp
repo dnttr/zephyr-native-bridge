@@ -22,10 +22,10 @@
 using namespace znb_kit;
 
 struct method_proxy_fixture {
-    std::unique_ptr<klass_signature> klass;
+    std::shared_ptr<klass_signature> klass;
 
     method_proxy_fixture()
-      : klass{ std::make_unique<klass_signature>(get_vm()->get_env(), "Native") }
+      : klass{ std::make_shared<klass_signature>(get_vm()->get_env(), "Native") }
     {}
 };
 
@@ -39,7 +39,7 @@ TEST_CASE_METHOD(method_proxy_fixture, "Method proxy initialization", "[method_p
         std::string native_void_signature{"()V"};
 
         const void_method m_v{ get_vm()->get_env(),
-                        klass.get(),
+                        klass,
                         native_void_name,
                         native_void_signature,
                         std::nullopt,
@@ -50,7 +50,7 @@ TEST_CASE_METHOD(method_proxy_fixture, "Method proxy initialization", "[method_p
         std::string string_signature{"()Ljava/lang/String;"};
 
         string_method m_s{ get_vm()->get_env(),
-                        klass.get(),
+                        klass,
                         string_name,
                         string_signature,
                         std::nullopt,
@@ -61,7 +61,7 @@ TEST_CASE_METHOD(method_proxy_fixture, "Method proxy initialization", "[method_p
         std::string instance_name = "<init>";
         std::string instance_signature = "()V";
 
-        auto method = void_method(vm->get_env(), klass.get(), instance_name, instance_signature, std::nullopt, false);
+        auto method = void_method(vm->get_env(), klass, instance_name, instance_signature, std::nullopt, false);
 
         auto klass_instance = instance(get_vm(), method, {});
         REQUIRE(klass_instance.get_owner());

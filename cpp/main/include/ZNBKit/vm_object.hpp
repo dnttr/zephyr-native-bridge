@@ -30,7 +30,7 @@ namespace znb_kit
             }
 
             if (jvmti_env != nullptr) {
-                jvmti.emplace(jvmti_env);
+                jvmti.emplace(jni, jvmti_env);
             }
         }
 
