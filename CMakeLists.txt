@@ -20,21 +20,21 @@ set(TEST_HEADER_DEST "${CMAKE_BINARY_DIR}/test_include")
 file(MAKE_DIRECTORY ${MAIN_HEADER_DEST})
 file(MAKE_DIRECTORY ${TEST_HEADER_DEST})
 
-file(GLOB_RECURSE MAIN_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/main/include/*.hpp")
-file(GLOB_RECURSE TEST_HEADER_FILES "${CMAKE_SOURCE_DIR}/cpp/test/include/*.hpp")
+file(GLOB_RECURSE MAIN_HEADER_FILES "${CMAKE_SOURCE_DIR}/include/*.hpp")
+file(GLOB_RECURSE TEST_HEADER_FILES "${CMAKE_SOURCE_DIR}/src/test/include/*.hpp")
 
-file(GLOB_RECURSE TEST_LIST "${CMAKE_SOURCE_DIR}/cpp/test/src/impl/*.cpp")
+file(GLOB_RECURSE TEST_LIST "${CMAKE_SOURCE_DIR}/src/test/cpp/impl/*.cpp")
 
 set(SOURCE_FILES
-        ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_object.cpp
-        ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_management.cpp
-        ${CMAKE_SOURCE_DIR}/cpp/main/src/jvmti/jvmti_object.cpp
-        ${CMAKE_SOURCE_DIR}/cpp/main/src/jvmti/jvmti_factory.cpp
-        ${CMAKE_SOURCE_DIR}/cpp/main/src/jni/utils/util.cpp
+        ${CMAKE_SOURCE_DIR}/src/main/cpp/vm_object.cpp
+        ${CMAKE_SOURCE_DIR}/src/main/cpp/vm_management.cpp
+        ${CMAKE_SOURCE_DIR}/src/main/cpp/jvmti/jvmti_object.cpp
+        ${CMAKE_SOURCE_DIR}/src/main/cpp/jvmti/jvmti_factory.cpp
+        ${CMAKE_SOURCE_DIR}/src/main/cpp/jni/utils/util.cpp
 )
 
 set(TEST_FILES
-        ${CMAKE_SOURCE_DIR}/cpp/test/src/setup.cpp
+        ${CMAKE_SOURCE_DIR}/src/test/cpp/setup.cpp
 )
 
 look_for_interface()
@@ -44,7 +44,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
-        ${CMAKE_SOURCE_DIR}/cpp/main/include
+        ${CMAKE_SOURCE_DIR}/include
         ${MAIN_HEADER_DEST}
 )
 
@@ -56,13 +56,13 @@ if(TEST_LIST)
         message(STATUS "  ${file}")
     endforeach()
 else()
-    message(WARNING "No test files found in ${CMAKE_SOURCE_DIR}/cpp/test/src/impl/")
+    message(WARNING "No test files found in ${CMAKE_SOURCE_DIR}/src/test/cpp/impl/")
 endif()
 
 add_custom_target(copy_main_headers ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory "${MAIN_HEADER_DEST}/ZNBKit"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/cpp/main/include"
+        "${CMAKE_SOURCE_DIR}/include"
         "${MAIN_HEADER_DEST}/ZNBKit"
         DEPENDS ${MAIN_HEADER_FILES}
         COMMENT "Copying main headers to build directory"
@@ -71,7 +71,7 @@ add_custom_target(copy_main_headers ALL
 add_custom_target(copy_test_headers ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory "${TEST_HEADER_DEST}"
         COMMAND ${CMAKE_COMMAND}
-        -DSOURCE_DIR="${CMAKE_SOURCE_DIR}/cpp/test/include"
+        -DSOURCE_DIR="${CMAKE_SOURCE_DIR}/src/test/include"
         -DDEST_DIR="${TEST_HEADER_DEST}"
         -P "${CMAKE_SOURCE_DIR}/tools/Copy.cmake"
         DEPENDS ${TEST_HEADER_FILES}
@@ -82,7 +82,7 @@ add_custom_target(process_config ALL
         COMMAND ${CMAKE_COMMAND} -E echo "Processing config.hpp with ZNI_DST=${ZNI_DST}"
         COMMAND ${CMAKE_COMMAND} -E make_directory "${TEST_HEADER_DEST}/ZNBKit"
         COMMAND ${CMAKE_COMMAND}
-        -DSOURCE_FILE="${CMAKE_SOURCE_DIR}/cpp/test/include/ZNBKit/config.hpp"
+        -DSOURCE_FILE="${CMAKE_SOURCE_DIR}/src/test/include/ZNBKit/config.hpp"
         -DDEST_FILE="${TEST_HEADER_DEST}/ZNBKit/config.hpp"
         -DZNI_DST="${ZNI_DST}"
         -P "${CMAKE_SOURCE_DIR}/tools/Config.cmake"
@@ -101,7 +101,7 @@ target_include_directories(${PROJECT_NAME}-tests
         PRIVATE
         ${MAIN_HEADER_DEST}
         ${TEST_HEADER_DEST}
-        ${CMAKE_SOURCE_DIR}/cpp/main/include/private
+        ${CMAKE_SOURCE_DIR}/include/private
 )
 
 target_link_libraries(${PROJECT_NAME}-tests PUBLIC ${PROJECT_NAME} ${LIB_LIST})
@@ -117,7 +117,7 @@ install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin)
 
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/cpp/main/include/
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
         DESTINATION include
         FILES_MATCHING PATTERN "*.hpp")
 
