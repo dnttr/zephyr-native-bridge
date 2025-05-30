@@ -29,7 +29,7 @@ set(SOURCE_FILES
         ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_object.cpp
         ${CMAKE_SOURCE_DIR}/cpp/main/src/vm_management.cpp
         ${CMAKE_SOURCE_DIR}/cpp/main/src/jvmti/jvmti_object.cpp
-        ${CMAKE_SOURCE_DIR}/cpp/main/src/jvmti/factory.cpp
+        ${CMAKE_SOURCE_DIR}/cpp/main/src/jvmti/jvmti_factory.cpp
         ${CMAKE_SOURCE_DIR}/cpp/main/src/jni/utils/util.cpp
 )
 

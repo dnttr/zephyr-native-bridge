@@ -15,7 +15,6 @@
 #include <jni.h>
 #include <jvmti.h>
 
-#include "jvmti_types.hpp"
 #include "ZNBKit/debug.hpp"
 #include "ZNBKit/jni/signatures/method/byte_method.hpp"
 #include "ZNBKit/jni/signatures/method/int_method.hpp"
@@ -23,6 +22,7 @@
 #include "ZNBKit/jni/signatures/method/object_method.hpp"
 #include "ZNBKit/jni/signatures/method/short_method.hpp"
 #include "ZNBKit/jni/signatures/method/void_method.hpp"
+#include "ZNBKit/jvmti/jvmti_types.hpp"
 
 #ifndef ACC_STATIC
 #define ACC_STATIC 0x0008
@@ -30,7 +30,10 @@
 
 namespace znb_kit
 {
-    class factory {
+    /*
+     * TODO: refactor further, this class is kinda messy.
+     */
+    class jvmti_factory {
     public:
         template <class T>
         static std::unique_ptr<method_signature<T>> get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, jclass klass,
@@ -45,12 +48,12 @@ namespace znb_kit
 
         template <typename T>
         static std::vector<JNINativeMethod> map_methods(
-        const std::unordered_multimap<std::string, Reference> &map,
+        const std::unordered_multimap<std::string, reference> &map,
         const std::vector<std::unique_ptr<method_signature<T>>> &methods);
     };
 
     template <typename T>
-    std::unique_ptr<method_signature<T>> factory::get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, jclass klass, const jobject &method)
+    std::unique_ptr<method_signature<T>> jvmti_factory::get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, jclass klass, const jobject &method)
     {
         const auto method_id = jni->FromReflectedMethod(method);
         if (!method_id) {
@@ -118,7 +121,7 @@ namespace znb_kit
     }
 
     template <typename T>
-    std::unique_ptr<method_signature<T>> factory::get_method_signature(JNIEnv *jni,
+    std::unique_ptr<method_signature<T>> jvmti_factory::get_method_signature(JNIEnv *jni,
         jvmtiEnv *jvmti,
         jclass &klass,
         std::string method_name,
@@ -126,7 +129,7 @@ namespace znb_kit
     {
         for (std::vector<jobject> methods_arr = get_methods(jni, klass); jobject &method_obj : methods_arr)
         {
-            auto method_desc = factory::get_method_signature<T>(jni, jvmti, klass, method_obj);
+            auto method_desc = jvmti_factory::get_method_signature<T>(jni, jvmti, klass, method_obj);
             if (method_desc && method_name == method_desc->name)
             {
                 if (method_desc->parameters.has_value() &&
@@ -143,7 +146,7 @@ namespace znb_kit
     }
 
     template <typename T>
-    std::vector<std::unique_ptr<method_signature<T>>> factory::look_for_method_signatures(JNIEnv *jni, jvmtiEnv *jvmti, const jclass &klass)
+    std::vector<std::unique_ptr<method_signature<T>>> jvmti_factory::look_for_method_signatures(JNIEnv *jni, jvmtiEnv *jvmti, const jclass &klass)
     {
         const auto method_objects = get_methods(jni, klass);
         std::vector<std::unique_ptr<method_signature<T>>> descriptors;
@@ -151,7 +154,7 @@ namespace znb_kit
 
         for (auto &method_obj : method_objects)
         {
-            if (auto method_desc = factory::get_method_signature<T>(jni, jvmti, klass, method_obj)) {
+            if (auto method_desc = jvmti_factory::get_method_signature<T>(jni, jvmti, klass, method_obj)) {
                 descriptors.push_back(std::move(method_desc));
             }
             jni->DeleteLocalRef(method_obj);
@@ -160,7 +163,7 @@ namespace znb_kit
     }
 
     template <typename T>
-    std::vector<JNINativeMethod> factory::map_methods(const std::unordered_multimap<std::string, Reference> &map,
+    std::vector<JNINativeMethod> jvmti_factory::map_methods(const std::unordered_multimap<std::string, reference> &map,
         const std::vector<std::unique_ptr<method_signature<T>>> &methods)
     {
         std::vector<JNINativeMethod> result_methods;

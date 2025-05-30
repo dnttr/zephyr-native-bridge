@@ -11,7 +11,7 @@
 #include "ZNBKit/debug.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
 
-void report_lacking_methods(std::multimap<std::string, znb_kit::Reference> map,
+void report_lacking_methods(std::multimap<std::string, znb_kit::reference> map,
     std::vector<JNINativeMethod> &filtered)
 {
     for (const auto& name : map | std::views::keys)

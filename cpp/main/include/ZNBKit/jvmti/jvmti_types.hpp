@@ -9,13 +9,13 @@
 
 namespace znb_kit
 {
-    struct Reference
+    struct reference
     {
         void *func_ptr;
         std::vector<std::string> parameters;
 
         template <typename Func>
-        Reference(Func f, const std::vector<std::string> &params)
+        reference(Func f, const std::vector<std::string> &params)
             : func_ptr(reinterpret_cast<void *>(f)),
               parameters(params)
         {
