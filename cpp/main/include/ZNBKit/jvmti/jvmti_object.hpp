@@ -37,12 +37,6 @@ namespace znb_kit
     {
         jvmtiEnv *jvmti;
 
-        template<typename T = jobject>
-        method_signature<T> get_method_signature(JNIEnv *env, const jobject &method);
-
-        template <class T>
-        std::vector<method_signature<T>> look_for_method_signatures(JNIEnv *env, const jclass &klass);
-
         template <class T>
         std::pair<std::vector<JNINativeMethod>, size_t> create_mappings(JNIEnv *env, const klass_signature &klass, const std::unordered_multimap<std::string, Reference> &map);
 
@@ -76,9 +70,6 @@ namespace znb_kit
         std::pair<std::vector<JNINativeMethod>, size_t> try_mapping_methods(JNIEnv *env, const klass_signature &klass, const std::unordered_multimap<std::string, Reference> &map);
 
         void clear_mapped_methods(const std::vector<JNINativeMethod> &vector);
-
-        template <class T>
-        method_signature<T> get_method_signature(JNIEnv *env, jclass klass, std::string method_name, std::vector<std::string> parameters);
 
         [[nodiscard]] jvmtiEnv *get_owner() const
         {

@@ -10,78 +10,29 @@
 
 #include "ZNBKit/debug.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
+#include "ZNBKit/jni/signatures/method/string_method.hpp"
 
-template <typename T>
-znb_kit::method_signature<T> znb_kit::jvmti_object::get_method_signature(JNIEnv *env, const jobject &method)
-{
-    const auto method_id = env->FromReflectedMethod(method);
+namespace znb_kit {
+    template std::pair<std::vector<JNINativeMethod>, size_t>
+    jvmti_object::try_mapping_methods<
+        void, jobject, jstring, jint, jlong,
+        jboolean, jfloat, jdouble, jbyte, jchar, jshort
+    >(JNIEnv*, const klass_signature&,
+       const std::unordered_multimap<std::string, Reference>&);
 
-    char *name;
-    char *signature;
+    // create_mappings
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<void>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jobject>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jstring>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jint>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jlong>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jboolean>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jfloat>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jdouble>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jbyte>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jchar>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
+    template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jshort>(JNIEnv*, const klass_signature&, const std::unordered_multimap<std::string, Reference>&);
 
-    if (const jvmtiError error = jvmti->GetMethodName(method_id, &name, &signature, nullptr); error !=
-        JVMTI_ERROR_NONE)
-    {
-        char *buffer;
-        jvmti->GetErrorName(error, &buffer);
-        debug_print("get_method_descriptor() has encountered an error: " + std::string(buffer));
-        jvmti->Deallocate(reinterpret_cast<unsigned char *>(buffer));
-
-        return method_signature<T>(nullptr);
-    }
-
-    auto name_duplicate = std::string(name);
-    auto signature_duplicate = std::string(signature);
-
-    if (signature)
-    {
-        jvmti->Deallocate(reinterpret_cast<unsigned char *>(signature));
-    }
-    if (name)
-    {
-        jvmti->Deallocate(reinterpret_cast<unsigned char *>(name));
-    }
-
-    auto parameters = get_parameters(env, method);
-
-    return method_signature<T>{name_duplicate, signature_duplicate, parameters};
-}
-
-template <typename T>
-std::vector<znb_kit::method_signature<T>> znb_kit::jvmti_object::look_for_method_signatures(JNIEnv *env,
-    const jclass &klass)
-{
-    const auto objects = get_methods(env, klass);
-
-    std::vector<method_signature<T>> descriptors;
-
-    for (auto &object : objects)
-    {
-        auto method_descriptor = get_method_signature<T>(env, jvmti, object);
-        descriptors.push_back(std::move(method_descriptor));
-    }
-
-    return descriptors;
-}
-
-template <typename T>
-znb_kit::method_signature<T> znb_kit::jvmti_object::get_method_signature(JNIEnv *env,
-    const jclass klass,
-    std::string method_name,
-    const std::vector<std::string> parameters)
-{
-    for (auto &object : get_methods(env, klass))
-    {
-        if (auto method_descriptor = get_method_signature<T>(env, jvmti, object); method_name.compare(method_descriptor.name))
-        {
-            if (compare_parameters(parameters, method_descriptor.parameters))
-            {
-                return method_descriptor;
-            }
-        }
-    }
-
-    return nullptr;
 }
 
 void report_lacking_methods(std::multimap<std::string, znb_kit::Reference> map,

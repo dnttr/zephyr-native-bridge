@@ -33,6 +33,18 @@ namespace znb_kit
             env->DeleteLocalRef(klass);
         }
 
+        klass_signature(JNIEnv *env, jclass owner)
+        {
+            if (env == nullptr || owner == nullptr)
+            {
+                throw std::invalid_argument("JNIEnv or class is invalid");
+            }
+
+            this->env = env;
+            this->owner = reinterpret_cast<jclass>(env->NewGlobalRef(owner));
+            env->DeleteGlobalRef(owner);
+        }
+
         ~klass_signature()
         {
             if (owner != nullptr && env != nullptr)
