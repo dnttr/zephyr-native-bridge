@@ -7,6 +7,7 @@
 #include <jni.h>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ZNBKit/jni/signatures/klass_signature.hpp"
@@ -24,7 +25,7 @@ namespace znb_kit
         std::string signature;
 
         std::optional<std::vector<std::string>> parameters;
-        klass_signature *owner;
+        std::shared_ptr<klass_signature> owner;
 
         bool is_static;
 
@@ -42,15 +43,15 @@ namespace znb_kit
     public:
         virtual ~method_signature() = default;
 
-        method_signature(JNIEnv *env, klass_signature *owner, std::string &name, std::string &signature, std::optional<std::vector<std::string>> parameters, const bool is_static)
+        method_signature(JNIEnv *env, std::shared_ptr<klass_signature> owner, std::string &name, std::string &signature, std::optional<std::vector<std::string>> parameters, const bool is_static)
             :
             env(env),
             name(std::move(name)),
             signature(std::move(signature)),
             parameters(std::move(parameters)),
+            owner(std::move(owner)),
             is_static(is_static)
         {
-            this->owner = owner;
             identity = build_identity();
         }
 
@@ -65,9 +66,9 @@ namespace znb_kit
             name(std::move(other.name)),
             signature(std::move(other.signature)),
             parameters(std::move(other.parameters)),
+            owner(std::move(other.owner)),
             is_static(other.is_static)
         {
-            owner = other.owner;
         }
 
         method_signature &operator=(method_signature &&other) noexcept
@@ -76,8 +77,8 @@ namespace znb_kit
             {
                 env = other.env;
                 identity = other.identity;
-                owner = other.owner,
-                    name = std::move(other.name);
+                owner = std::move(other.owner);
+                name = std::move(other.name);
                 signature = std::move(other.signature);
                 parameters = std::move(other.parameters);
                 is_static = other.is_static;

@@ -11,9 +11,9 @@ namespace znb_kit
     class string_method final : public object_method
     {
     public:
-        string_method(JNIEnv *env, klass_signature *owner, std::string &name, std::string &signature,
+        string_method(JNIEnv *env, std::shared_ptr<klass_signature> owner, std::string &name, std::string &signature,
             const std::optional<std::vector<std::string>> &parameters, const bool is_static)
-            : object_method(env, owner, name, signature, parameters, is_static)
+            : object_method(env, std::move(owner), name, signature, parameters, is_static)
         {
         }
 
@@ -22,10 +22,10 @@ namespace znb_kit
             jobject object;
 
             if (is_static) {
-                object = env->CallStaticObjectMethod(get_owner(), get_identity());
+                object = env->CallStaticObjectMethodA(get_owner(), get_identity(), parameters.data());
             } else
             {
-                object = env->CallObjectMethod(instance, get_identity());
+                object = env->CallObjectMethodA(instance, get_identity(), parameters.data());
             }
 
             return reinterpret_cast<jstring>(object);

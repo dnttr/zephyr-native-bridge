@@ -94,19 +94,19 @@ std::unique_ptr<znb_kit::method_signature<T>> znb_kit::factory::get_method_signa
     const auto kls_sig = std::make_shared<klass_signature>(jni, klass);
 
     if constexpr (std::is_same_v<T, jobject>) {
-        return std::make_unique<object_method>(jni, kls_sig.get(), name_duplicate, signature_duplicate, parameters, is_static);
+        return std::make_unique<object_method>(jni, kls_sig, name_duplicate, signature_duplicate, parameters, is_static);
     } else if constexpr (std::is_same_v<T, jshort>) {
-        return std::make_unique<short_method>(jni, kls_sig.get(), name_duplicate, signature_duplicate, parameters, is_static);
+        return std::make_unique<short_method>(jni, kls_sig, name_duplicate, signature_duplicate, parameters, is_static);
     } else if constexpr (std::is_same_v<T, jbyte>) {
-        return std::make_unique<byte_method>(jni, kls_sig.get(), name_duplicate, signature_duplicate, parameters, is_static);
+        return std::make_unique<byte_method>(jni, kls_sig, name_duplicate, signature_duplicate, parameters, is_static);
     } else if constexpr (std::is_same_v<T, jint>) {
-        return std::make_unique<int_method>(jni, kls_sig.get(), name_duplicate, signature_duplicate, parameters, is_static);
+        return std::make_unique<int_method>(jni, kls_sig, name_duplicate, signature_duplicate, parameters, is_static);
     } else if constexpr (std::is_same_v<T, jlong>) {
-        return std::make_unique<long_method>(jni, kls_sig.get(), name_duplicate, signature_duplicate, parameters, is_static);
+        return std::make_unique<long_method>(jni, kls_sig, name_duplicate, signature_duplicate, parameters, is_static);
     } else if constexpr (std::is_same_v<T, jstring>) {
-        return std::make_unique<string_method>(jni, kls_sig.get(), name_duplicate, signature_duplicate, parameters, is_static);
+        return std::make_unique<string_method>(jni, kls_sig, name_duplicate, signature_duplicate, parameters, is_static);
     } else if constexpr (std::is_same_v<T, void>) {
-        return std::make_unique<void_method>(jni, kls_sig.get(), name_duplicate, signature_duplicate, parameters, is_static);
+        return std::make_unique<void_method>(jni, kls_sig, name_duplicate, signature_duplicate, parameters, is_static);
     }
     
     return nullptr;
