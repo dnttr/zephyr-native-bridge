@@ -54,10 +54,10 @@ namespace znb_kit
 
         template <typename T>
         std::pair<std::vector<JNINativeMethod>, size_t> create_mappings(
-            const jclass &klass,
+            const klass_signature &klass_signature,
             const std::unordered_multimap<std::string, reference> &map)
         {
-            const auto methods = jvmti_factory::look_for_method_signatures<T>(this->jni, this->jvmti, klass);
+            const auto methods = jvmti_factory::look_for_method_signatures<T>(this->jni, this->jvmti, klass_signature);
             auto filtered_mappings = jvmti_factory::map_methods(map, methods);
             size_t size = filtered_mappings.size();
 
@@ -70,7 +70,7 @@ namespace znb_kit
 
         template <typename... Ts>
         std::pair<std::vector<JNINativeMethod>, size_t> try_mapping_methods(
-            const jclass &klass,
+            const klass_signature &klass_signature,
             const std::unordered_multimap<std::string, reference> &map)
         {
             std::vector<JNINativeMethod> mapped_methods;
@@ -78,7 +78,7 @@ namespace znb_kit
 
             ([&]
             {
-                auto pair_result = create_mappings<Ts>(klass, map);
+                auto pair_result = create_mappings<Ts>(klass_signature, map);
                 mapped_methods.insert(mapped_methods.end(), pair_result.first.begin(), pair_result.first.end());
                 total += pair_result.second;
             }(), ...);
@@ -97,28 +97,28 @@ namespace znb_kit
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::try_mapping_methods<
         void, jobject, jstring, jint, jlong,
         jboolean, jfloat, jdouble, jbyte, jchar, jshort
-    >(const jclass &, const std::unordered_multimap<std::string, reference> &);
+    >(const klass_signature &, const std::unordered_multimap<std::string, reference> &);
 
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<void>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jobject>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jstring>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jint>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jlong>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jboolean>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jfloat>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jdouble>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jbyte>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jchar>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
     template std::pair<std::vector<JNINativeMethod>, size_t> jvmti_object::create_mappings<jshort>(
-        const jclass &, const std::unordered_multimap<std::string, reference> &);
+        const klass_signature &, const std::unordered_multimap<std::string, reference> &);
 }
