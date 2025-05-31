@@ -11,6 +11,8 @@
 #include "ZNBKit/jni/signatures/method/short_method.hpp"
 #include "ZNBKit/jni/signatures/method/void_method.hpp"
 
+#include "ZNBKit/jvmti/jvmti_types.hpp"
+
 #include "ZNBKit/debug.hpp"
 
 /*
@@ -47,7 +49,6 @@ namespace
         }
     };
 
-
     template<typename JVMTI_ALLOC_TYPE>
     using jvmti_ptr = std::unique_ptr<JVMTI_ALLOC_TYPE, jvmti_deleter<JVMTI_ALLOC_TYPE>>;
 }
@@ -63,7 +64,7 @@ namespace znb_kit
     template std::vector<std::unique_ptr<method_signature<TYPE>>> jvmti_factory::look_for_method_signatures<TYPE>(JNIEnv *, jvmtiEnv *, const klass_signature &);
 
 #define INSTANTIATE_MAP_METHODS(TYPE) \
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<TYPE>(const std::unordered_multimap<std::string, reference> &, const std::vector<std::unique_ptr<method_signature<TYPE>>> &);
+    template std::vector<native_method> jvmti_factory::map_methods<TYPE>(const std::unordered_multimap<std::string, reference> &, const std::vector<std::unique_ptr<method_signature<TYPE>>> &);
 
 #define INSTANTIATE_METHOD_SPEC(JNI_TYPE, SUFFIX) \
     template<> \
@@ -209,33 +210,38 @@ namespace znb_kit
     }
 
     template <typename T>
-    std::vector<JNINativeMethod> jvmti_factory::map_methods(const std::unordered_multimap<std::string, reference> &map,
-        const std::vector<std::unique_ptr<method_signature<T>>> &methods)
+    std::vector<native_method> jvmti_factory::map_methods(const std::unordered_multimap<std::string, reference> &map,
+                                                                         const std::vector<std::unique_ptr<method_signature<T>>> &methods)
     {
-        std::vector<JNINativeMethod> result_methods;
+        std::vector<native_method> result_methods;
         result_methods.reserve(methods.size());
 
         for (const auto& method_ptr : methods) {
-            if (!method_ptr) continue;
+            if (!method_ptr)
+            {
+                continue;
+            }
+
             const auto& method = *method_ptr;
 
             auto range = map.equal_range(method.name);
             for (auto it = range.first; it != range.second; ++it) {
-                if (method.parameters.has_value() && znb_kit::compare_parameters(it->second.parameters, method.parameters.value())) {
-                    char* name_dup = strdup(method.name.c_str());
-                    char* sig_dup = strdup(method.signature.c_str());
-                    if (!name_dup || !sig_dup) {
-                        free(name_dup);
-                        free(sig_dup);
-                        continue;
-                    }
-                    result_methods.push_back(JNINativeMethod{
-                        name_dup,
-                        sig_dup,
-                        it->second.has_func() ? it->second.func_ptr : nullptr
-                    });
-                    break;
+                if (!method.parameters.has_value())
+                {
+                    continue;
                 }
+
+                if (!znb_kit::compare_parameters(it->second.parameters, method.parameters.value()))
+                {
+                    continue;
+                }
+
+                result_methods.emplace_back(
+                    method.name,
+                    method.signature,
+                    it->second.has_func() ? it->second.func_ptr : nullptr
+                );
+                break;
             }
         }
         return result_methods;

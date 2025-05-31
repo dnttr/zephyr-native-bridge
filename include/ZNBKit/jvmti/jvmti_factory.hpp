@@ -22,7 +22,6 @@
 
 namespace znb_kit
 {
-    //TODO: change klass_signature to another name, its confusing.
     class jvmti_factory
     {
         template <typename T>
@@ -56,7 +55,7 @@ namespace znb_kit
             const klass_signature &owner_ks);
 
         template <typename T>
-        static std::vector<JNINativeMethod> map_methods(
+        static std::vector<native_method> map_methods(
             const std::unordered_multimap<std::string, reference> &map,
             const std::vector<std::unique_ptr<method_signature<T>>> &methods);
     };
