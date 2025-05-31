@@ -6,6 +6,7 @@
 
 /*
  * For now include all JNI types here. It probably isn't good idea to include all of them until they're all implemented but who cares.
+ * I hope this works btw, no idea if it will compile at all.
  */
 
 #define JNI_TYPES(TYPE) \
@@ -23,66 +24,20 @@
 
 namespace znb_kit
 {
-#define GET_METHOD_SIGNATURE_OBJECT(TYPE) \
+#define INSTANTIATE_GET_METHOD_SIGNATURE_OBJECT(TYPE) \
     template std::unique_ptr<method_signature<TYPE>> jvmti_factory::get_method_signature<TYPE>(JNIEnv *, jvmtiEnv *, const klass_signature &, const jobject &);
 
-#define GET_METHOD_SIGNATURE_PARAMETERS(TYPE) \
+#define INSTANTIATE_GET_METHOD_SIGNATURE_PARAMETERS(TYPE) \
     template std::unique_ptr<method_signature<TYPE>> jvmti_factory::get_method_signature<TYPE>(JNIEnv *, jvmtiEnv *, const klass_signature &, std::string, std::vector<std::string>);
 
-    template std::vector<std::unique_ptr<method_signature<void>>> jvmti_factory::look_for_method_signatures<void>(
-        JNIEnv *, jvmtiEnv *, const klass_signature &);
-    template std::vector<std::unique_ptr<method_signature<jobject>>> jvmti_factory::look_for_method_signatures<jobject>(
-        JNIEnv *, jvmtiEnv *, const klass_signature &);
-    template std::vector<std::unique_ptr<method_signature<jstring>>> jvmti_factory::look_for_method_signatures<jstring>(
-        JNIEnv *, jvmtiEnv *, const klass_signature &);
-    template std::vector<std::unique_ptr<method_signature<jint>>> jvmti_factory::look_for_method_signatures<jint>(
-        JNIEnv *, jvmtiEnv *, const klass_signature &);
-    template std::vector<std::unique_ptr<method_signature<jlong>>> jvmti_factory::look_for_method_signatures<jlong>(
-        JNIEnv *, jvmtiEnv *, const klass_signature &);
-    template std::vector<std::unique_ptr<method_signature<jboolean>>> jvmti_factory::look_for_method_signatures<
-        jboolean>(JNIEnv *, jvmtiEnv *, const klass_signature &);
-    template std::vector<std::unique_ptr<method_signature<jfloat>>> jvmti_factory::look_for_method_signatures<jfloat>(
-        JNIEnv *, jvmtiEnv *, const klass_signature &);
-    template std::vector<std::unique_ptr<method_signature<jdouble>>> jvmti_factory::look_for_method_signatures<jdouble>(
-        JNIEnv *, jvmtiEnv *, const klass_signature &);
-    template std::vector<std::unique_ptr<method_signature<jbyte>>> jvmti_factory::look_for_method_signatures<jbyte>(
-        JNIEnv *, jvmtiEnv *, const klass_signature &);
-    template std::vector<std::unique_ptr<method_signature<jchar>>> jvmti_factory::look_for_method_signatures<jchar>(
-        JNIEnv *, jvmtiEnv *, const klass_signature &);
-    template std::vector<std::unique_ptr<method_signature<jshort>>> jvmti_factory::look_for_method_signatures<jshort>(
-        JNIEnv *, jvmtiEnv *, const klass_signature &);
+#define INSTANTIATE_LOOK_FOR_METHOD_SIGNATURES(TYPE) \
+    template std::vector<std::unique_ptr<method_signature<TYPE>>> jvmti_factory::look_for_method_signatures<TYPE>(JNIEnv *, jvmtiEnv *, const klass_signature &);
 
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<void>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<void>>> &);
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<jobject>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<jobject>>> &);
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<jstring>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<jstring>>> &);
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<jint>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<jint>>> &);
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<jlong>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<jlong>>> &);
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<jboolean>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<jboolean>>> &);
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<jfloat>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<jfloat>>> &);
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<jdouble>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<jdouble>>> &);
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<jbyte>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<jbyte>>> &);
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<jchar>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<jchar>>> &);
-    template std::vector<JNINativeMethod> jvmti_factory::map_methods<jshort>(
-        const std::unordered_multimap<std::string, reference> &,
-        const std::vector<std::unique_ptr<method_signature<jshort>>> &);
+#define INSTANTIATE_MAP_METHODS(TYPE) \
+    template std::vector<JNINativeMethod> jvmti_factory::map_methods<TYPE>(const std::unordered_multimap<std::string, reference> &, const std::vector<std::unique_ptr<method_signature<TYPE>>> &);
+
+    JNI_TYPES(INSTANTIATE_GET_METHOD_SIGNATURE_OBJECT)
+    JNI_TYPES(INSTANTIATE_GET_METHOD_SIGNATURE_PARAMETERS)
+    JNI_TYPES(INSTANTIATE_LOOK_FOR_METHOD_SIGNATURES)
+    JNI_TYPES(INSTANTIATE_MAP_METHODS)
 }
