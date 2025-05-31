@@ -35,7 +35,7 @@ jmethodID znb_kit::get_method_id(JNIEnv *env, const jclass &klass, const std::st
 jmethodID znb_kit::get_method_id(JNIEnv *env, const std::string &klass_name, const std::string &method_name,
     const std::string &signature, const bool is_static)
 {
-    const auto klass = znb_kit::get_klass(env, klass_name);
+    const auto klass = get_klass(env, klass_name);
 
     if (is_static)
     {
@@ -45,16 +45,16 @@ jmethodID znb_kit::get_method_id(JNIEnv *env, const std::string &klass_name, con
     return env->GetMethodID(klass, method_name.c_str(), signature.c_str());
 }
 
-std::vector<jobject> znb_kit::get_methods(JNIEnv *env, const jclass &clazz)
+std::vector<jobject> znb_kit::get_methods(JNIEnv *env, const jclass &klass)
 {
-    const auto method_id = znb_kit::get_method_id(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
+    const auto method_id = get_method_id(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
 
     if (method_id == nullptr)
     {
         return {};
     }
 
-    const auto array = reinterpret_cast<jobjectArray>(env->CallObjectMethod(clazz, method_id));
+    const auto array = reinterpret_cast<jobjectArray>(env->CallObjectMethod(klass, method_id));
 
     if (look_for_exceptions(env))
     {

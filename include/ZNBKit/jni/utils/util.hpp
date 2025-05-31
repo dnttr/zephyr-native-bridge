@@ -23,5 +23,5 @@ namespace znb_kit
 
     bool compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2);
 
-    std::vector<jobject> get_methods(JNIEnv *env, const jclass &clazz);
+    std::vector<jobject> get_methods(JNIEnv *env, const jclass &klass);
 }
