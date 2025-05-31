@@ -37,7 +37,7 @@ namespace znb_kit
             return identity;
         }
     public:
-        //for now
+
         const std::string name;
         const std::string signature;
 
@@ -48,11 +48,11 @@ namespace znb_kit
         method_signature(JNIEnv *env, std::shared_ptr<klass_signature> owner, const std::string &name, const std::string &signature, std::optional<std::vector<std::string>> parameters, const bool is_static)
             :
             env(env),
-            name(std::move(name)),
-            signature(std::move(signature)),
-            parameters(std::move(parameters)),
             owner(std::move(owner)),
-            is_static(is_static)
+            is_static(is_static),
+            name(name),
+            signature(signature),
+            parameters(std::move(parameters))
         {
             identity = build_identity();
         }
@@ -65,11 +65,11 @@ namespace znb_kit
             :
             env(other.env),
             identity(other.identity),
-            name(std::move(other.name)),
-            signature(std::move(other.signature)),
-            parameters(std::move(other.parameters)),
             owner(std::move(other.owner)),
-            is_static(other.is_static)
+            is_static(other.is_static),
+            name(other.name),
+            signature(other.signature),
+            parameters(std::move(other.parameters))
         {
         }
 
