@@ -22,6 +22,26 @@
     TYPE(jchar) \
     TYPE(jshort)
 
+namespace
+{
+    template<typename JVMTI_ALLOC_TYPE>
+    struct jvmti_deleter
+    {
+        jvmtiEnv *jvmti_env;
+
+        void operator()(JVMTI_ALLOC_TYPE *ptr) const
+        {
+            if (jvmti_env && ptr)
+            {
+                jvmti_env->Deallocate(reinterpret_cast<unsigned char *>(ptr));
+            }
+        }
+    };
+
+
+    template<typename JVMTI_ALLOC_TYPE>
+    using jvmti_ptr = std::unique_ptr<JVMTI_ALLOC_TYPE, jvmti_deleter<JVMTI_ALLOC_TYPE>>;
+}
 namespace znb_kit
 {
 #define INSTANTIATE_GET_METHOD_SIGNATURE_OBJECT(TYPE) \
@@ -45,63 +65,60 @@ namespace znb_kit
             return nullptr;
         }
 
-        char *name_ptr = nullptr;
-        char *signature_ptr = nullptr;
+        char *raw_name_ptr = nullptr;
+        char *raw_signature_ptr = nullptr;
+        
+        jvmtiError error = jvmti->GetMethodName(method_id, &raw_name_ptr, &raw_signature_ptr, nullptr);
 
-        jvmtiError error = jvmti->GetMethodName(method_id, &name_ptr, &signature_ptr, nullptr);
+        jvmti_ptr<char> name_ptr(raw_name_ptr, {jvmti});
+        jvmti_ptr<char> signature_ptr(raw_signature_ptr, {jvmti});
+
         if (error != JVMTI_ERROR_NONE)
         {
-            char *error_buffer = nullptr;
-            jvmti->GetErrorName(error, &error_buffer);
-            debug_print("factory::get_method_signature() JVMTI GetMethodName error: " + (error_buffer ? std::string(error_buffer) : "Unknown error"));
-
-            if (error_buffer)
-                jvmti->Deallocate(reinterpret_cast<unsigned char *>(error_buffer));
-            if (name_ptr)
-                jvmti->Deallocate(reinterpret_cast<unsigned char *>(name_ptr));
-            if (signature_ptr)
-                jvmti->Deallocate(reinterpret_cast<unsigned char *>(signature_ptr));
+            char *raw_error_buffer = nullptr;
+            jvmti->GetErrorName(error, &raw_error_buffer);
+            jvmti_ptr<char> error_buffer(raw_error_buffer, {jvmti});
+            
+            debug_print("factory::get_method_signature() JVMTI GetMethodName error: " + (error_buffer ? std::string(error_buffer.get()) : "Unknown error"));
 
             return nullptr;
         }
 
-        std::string name_str = name_ptr ? name_ptr : "";
-        std::string signature_str = signature_ptr ? signature_ptr : "";
+        if (name_ptr == nullptr || signature_ptr == nullptr)
+        {
+            return nullptr;
+        }
+
+        std::string name = name_ptr.get();
+        std::string signature = signature_ptr.get();
 
         jint modifiers = 0;
 
         error = jvmti->GetMethodModifiers(method_id, &modifiers);
-         if (error != JVMTI_ERROR_NONE) {
+        if (error != JVMTI_ERROR_NONE) {
             debug_print("factory::get_method_signature() JVMTI GetMethodModifiers error");
-            if (name_ptr) jvmti->Deallocate(reinterpret_cast<unsigned char *>(name_ptr));
-            if (signature_ptr) jvmti->Deallocate(reinterpret_cast<unsigned char *>(signature_ptr));
             return nullptr;
         }
 
         bool is_static = (modifiers & ACC_STATIC) != 0;
-
-        if (signature_ptr) jvmti->Deallocate(reinterpret_cast<unsigned char *>(signature_ptr));
-        if (name_ptr) jvmti->Deallocate(reinterpret_cast<unsigned char *>(name_ptr));
-
         auto params = get_parameters(jni, method);
         auto ptr = std::make_shared<znb_kit::klass_signature>(klass_signature);
-
-
+        
         if constexpr (std::is_same_v<T, jobject>) {
-            return std::make_unique<object_method>(jni, ptr, name_str, signature_str, params, is_static);
+            return std::make_unique<object_method>(jni, ptr, name, signature, params, is_static);
         } else if constexpr (std::is_same_v<T, jshort>) {
-            return std::make_unique<short_method>(jni, ptr, name_str, signature_str, params, is_static);
+            return std::make_unique<short_method>(jni, ptr, name, signature, params, is_static);
         } else if constexpr (std::is_same_v<T, jbyte>) {
-            return std::make_unique<byte_method>(jni, ptr, name_str, signature_str, params, is_static);
+            return std::make_unique<byte_method>(jni, ptr, name, signature, params, is_static);
         } else if constexpr (std::is_same_v<T, jint>) {
-            return std::make_unique<int_method>(jni, ptr, name_str, signature_str, params, is_static);
+            return std::make_unique<int_method>(jni, ptr, name, signature, params, is_static);
         } else if constexpr (std::is_same_v<T, jlong>) {
-            return std::make_unique<long_method>(jni, ptr, name_str, signature_str, params, is_static);
+            return std::make_unique<long_method>(jni, ptr, name, signature, params, is_static);
         } else if constexpr (std::is_same_v<T, void>) {
-            return std::make_unique<void_method>(jni, ptr, name_str, signature_str, params, is_static);
+            return std::make_unique<void_method>(jni, ptr, name, signature, params, is_static);
         }
 
-        debug_print("factory::get_method_signature() unhandled type for T in template for method: " + name_str);
+        debug_print("factory::get_method_signature() unhandled type for T in template for method: " + name);
         return nullptr;
     }
 
