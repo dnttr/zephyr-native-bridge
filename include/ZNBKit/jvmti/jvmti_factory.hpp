@@ -30,26 +30,42 @@
 
 namespace znb_kit
 {
-    /*
-     * TODO: refactor further, this class is kinda messy.
-     */
-
-    class jvmti_factory {
+    //TODO: change klass_signature to another name, its confusing.
+    class jvmti_factory
+    {
+        template <typename T>
+        static std::unique_ptr<method_signature<T>> create_method_instance(
+            JNIEnv *jni,
+            const klass_signature &klass_signature,
+            const std::string &name,
+            const std::string &signature,
+            const std::optional<std::vector<std::string>> &params,
+            bool is_static);
     public:
         template <class T>
-        static std::unique_ptr<method_signature<T>> get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, const klass_signature &klass_signature,
-                                                                  const jobject &method);
+        static std::unique_ptr<method_signature<T>> get_method_signature(
+            JNIEnv *jni,
+            jvmtiEnv *jvmti,
+            const klass_signature &klass_signature,
+            const jobject &method);
+
         template <class T>
-        static std::unique_ptr<method_signature<T>> get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, const klass_signature &klass_signature,
-                                                                  std::string method_name,
-                                                                  std::vector<std::string> target_params);
+        static std::unique_ptr<method_signature<T>> get_method_signature(
+            JNIEnv *jni,
+            jvmtiEnv *jvmti,
+            const klass_signature &klass_signature,
+            std::string method_name,
+            std::vector<std::string> target_params);
+
         template <class T>
         static std::vector<std::unique_ptr<method_signature<T>>> look_for_method_signatures(
-            JNIEnv *jni, jvmtiEnv *jvmti, const klass_signature &klass_signature);
+            JNIEnv *jni,
+            jvmtiEnv *jvmti,
+            const klass_signature &klass_signature);
 
         template <typename T>
         static std::vector<JNINativeMethod> map_methods(
-        const std::unordered_multimap<std::string, reference> &map,
-        const std::vector<std::unique_ptr<method_signature<T>>> &methods);
+            const std::unordered_multimap<std::string, reference> &map,
+            const std::vector<std::unique_ptr<method_signature<T>>> &methods);
     };
 }
