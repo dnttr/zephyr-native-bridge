@@ -4,10 +4,8 @@
 
 #pragma once
 
-#include <cstring>
 #include <memory>
 #include <optional>
-#include <ranges>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -15,13 +13,7 @@
 #include <jni.h>
 #include <jvmti.h>
 
-#include "ZNBKit/debug.hpp"
-#include "ZNBKit/jni/signatures/method/byte_method.hpp"
-#include "ZNBKit/jni/signatures/method/int_method.hpp"
-#include "ZNBKit/jni/signatures/method/long_method.hpp"
-#include "ZNBKit/jni/signatures/method/object_method.hpp"
-#include "ZNBKit/jni/signatures/method/short_method.hpp"
-#include "ZNBKit/jni/signatures/method/void_method.hpp"
+#include "ZNBKit/jni/signatures/method_signature.hpp"
 #include "ZNBKit/jvmti/jvmti_types.hpp"
 
 #ifndef ACC_STATIC
@@ -36,7 +28,7 @@ namespace znb_kit
         template <typename T>
         static std::unique_ptr<method_signature<T>> create_method_instance(
             JNIEnv *jni,
-            const klass_signature &klass_signature,
+            const klass_signature &owner_ks,
             const std::string &name,
             const std::string &signature,
             const std::optional<std::vector<std::string>> &params,
@@ -46,22 +38,22 @@ namespace znb_kit
         static std::unique_ptr<method_signature<T>> get_method_signature(
             JNIEnv *jni,
             jvmtiEnv *jvmti,
-            const klass_signature &klass_signature,
+            const klass_signature &owner_ks,
             const jobject &method);
 
         template <class T>
         static std::unique_ptr<method_signature<T>> get_method_signature(
             JNIEnv *jni,
             jvmtiEnv *jvmti,
-            const klass_signature &klass_signature,
-            std::string method_name,
-            std::vector<std::string> target_params);
+            const klass_signature &owner_ks,
+            const std::string& method_name,
+            const std::vector<std::string>& target_params);
 
         template <class T>
         static std::vector<std::unique_ptr<method_signature<T>>> look_for_method_signatures(
             JNIEnv *jni,
             jvmtiEnv *jvmti,
-            const klass_signature &klass_signature);
+            const klass_signature &owner_ks);
 
         template <typename T>
         static std::vector<JNINativeMethod> map_methods(

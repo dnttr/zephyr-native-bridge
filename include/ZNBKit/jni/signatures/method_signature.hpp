@@ -38,14 +38,14 @@ namespace znb_kit
         }
     public:
         //for now
-        std::string name;
-        std::string signature;
+        const std::string name;
+        const std::string signature;
 
         std::optional<std::vector<std::string>> parameters;
 
         virtual ~method_signature() = default;
 
-        method_signature(JNIEnv *env, std::shared_ptr<klass_signature> owner, std::string &name, std::string &signature, std::optional<std::vector<std::string>> parameters, const bool is_static)
+        method_signature(JNIEnv *env, std::shared_ptr<klass_signature> owner, const std::string &name, const std::string &signature, std::optional<std::vector<std::string>> parameters, const bool is_static)
             :
             env(env),
             name(std::move(name)),
