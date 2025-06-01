@@ -164,5 +164,31 @@ namespace znb_kit
 
             return method;
         }
+
+        static jobject invoke_object_method(JNIEnv *env, const jclass klass, const jmethodID method_id, std::vector<jvalue> &parameters, const bool is_static)
+        {
+            if (env == nullptr || klass == nullptr || method_id == nullptr)
+            {
+                throw std::invalid_argument("Variable 'env' or 'klass' or 'method_id' is null");
+            }
+
+            jobject result;
+
+            if (is_static)
+            {
+                result = env->CallStaticObjectMethod(klass , method_id, parameters.data());
+            } else {
+                result = env->CallObjectMethod(klass, method_id, parameters.data());
+            }
+
+            if (env->ExceptionCheck())
+            {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                throw std::runtime_error("Failed to invoke object method (static val: " + std::to_string(is_static) + ")");
+            }
+
+            return add_local_ref(env, result);
+        }
     };
 }
