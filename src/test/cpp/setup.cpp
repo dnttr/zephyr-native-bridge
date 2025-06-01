@@ -10,7 +10,7 @@ using namespace znb_kit;
 int main(const int argc, char* argv[]) {
     Catch::Session session;
 
-    debug_print("--------> Running tests <--------");
+    debug_print_ignore_formatting("--------> RUNNING TESTS <--------");
 
     vm = vm_management::create_and_wrap_vm(ZNI_DST);
 

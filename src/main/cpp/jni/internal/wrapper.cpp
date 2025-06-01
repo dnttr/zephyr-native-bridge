@@ -12,14 +12,16 @@ namespace znb_kit
 {
     std::mutex global_tracker::mutex;
     std::unordered_set<jobject> global_tracker::global_refs;
+    std::unordered_map<jobject, ref_info> global_tracker::global_ref_sources;
 
-    void global_tracker::add(const jobject &ref)
+    void global_tracker::add(const jobject &ref, const std::string &file, int line, const std::string &method)
     {
         std::lock_guard lock(mutex);
 
         if (ref != nullptr)
         {
             global_refs.insert(ref);
+            global_ref_sources[ref] = {file, line, method};
         }
     }
 
@@ -27,12 +29,35 @@ namespace znb_kit
     {
         std::lock_guard lock(mutex);
         global_refs.erase(ref);
+        global_ref_sources.erase(ref);
     }
 
     size_t global_tracker::count()
     {
         std::lock_guard lock(mutex);
         return global_refs.size();
+    }
+
+    void global_tracker::dump_refs()
+    {
+        std::lock_guard lock(mutex);
+        debug_print_cerr("Dumping " + std::to_string(global_refs.size()) + " global references:");
+
+        for (const auto& ref : global_refs)
+        {
+            if (auto it = global_ref_sources.find(ref); it != global_ref_sources.end())
+            {
+                const auto& info = it->second;
+                debug_print_cerr("Global ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
+                                " created at " + info.file + ":" + std::to_string(info.line) +
+                                " in " + info.method);
+            }
+            else
+            {
+                debug_print_cerr("Global ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
+                                " (source unknown)");
+            }
+        }
     }
 
     void wrapper::check_for_refs()
@@ -50,19 +75,45 @@ namespace znb_kit
             if (!is_global_empty)
             {
                 debug_print_cerr("Global references are not empty, potential memory leak detected.");
+                global_tracker::dump_refs();
             }
 
             if (!is_local_empty)
             {
                 debug_print_cerr("Local references are not empty, potential memory leak detected.");
+                dump_local_refs();
             }
         } else
         {
-            debug_print_cerr("No references left. All good!");
+            debug_print_cerr("No references left. All good i think, unless not using wrapper, then well, you are on your own. :>");
         }
     }
 
-    jobject wrapper::add_local_ref(JNIEnv *env, const jobject &obj)
+    void wrapper::dump_local_refs()
+    {
+        debug_print_cerr("Dumping " + std::to_string(local_refs.size()) + " local references:");
+        for (const auto& ref : local_refs)
+        {
+            auto it = local_ref_sources.find(ref);
+            if (it != local_ref_sources.end())
+            {
+                const auto& info = it->second;
+                debug_print_cerr("Local ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
+                               " created at " + info.file + ":" + std::to_string(info.line) +
+                               " in " + info.method +
+                               (info.details.empty() ? "" : " (" + info.details + ")"));
+            }
+            else
+            {
+                debug_print_cerr("Local ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
+                               " (source unknown)");
+            }
+        }
+    }
+
+    jobject wrapper::add_local_ref(JNIEnv *env, const jobject &obj,
+                                  const std::string &file, int line,
+                                  const std::string &method)
     {
         if (env == nullptr)
         {
@@ -74,6 +125,7 @@ namespace znb_kit
         if (ref)
         {
             local_refs.insert(ref);
+            local_ref_sources[ref] = {file, line, method};
         }
 
         return ref;
@@ -89,11 +141,14 @@ namespace znb_kit
         if (obj)
         {
             local_refs.erase(obj);
+            local_ref_sources.erase(obj);
             env->DeleteLocalRef(obj);
         }
     }
 
-    jobject wrapper::add_global_ref(JNIEnv *env, const jobject &obj)
+    jobject wrapper::add_global_ref(JNIEnv *env, const jobject &obj,
+                                   const std::string &file, int line,
+                                   const std::string &method)
     {
         if (env == nullptr)
         {
@@ -104,7 +159,7 @@ namespace znb_kit
 
         if (ref)
         {
-            global_tracker::add(ref);
+            global_tracker::add(ref, file, line, method);
         }
 
         return ref;
@@ -124,7 +179,10 @@ namespace znb_kit
         }
     }
 
-    jclass wrapper::search_for_class(JNIEnv *env, const std::string &name)
+    jclass wrapper::search_for_class(JNIEnv *env, const std::string &name,
+                               const std::string &caller_file,
+                               const int caller_line,
+                               const std::string &caller_function)
     {
         if (env == nullptr)
         {
@@ -146,6 +204,16 @@ namespace znb_kit
         }
 
         local_refs.insert(klass);
+
+        std::string callsite = "Called from " + get_path(caller_file) + ":" +
+                             std::to_string(caller_line) + " in " + caller_function;
+
+        local_ref_sources[klass] = {
+            __FILE__,
+            __LINE__,
+            __func__,
+            "Class: " + name + " | " + callsite
+        };
 
         return klass;
     }
@@ -190,11 +258,14 @@ namespace znb_kit
                                   const std::string &signature, const bool is_static)
     {
         const auto klass = search_for_class(env, name);
-        return get_method(env, klass, method, signature, is_static);
+        const auto method_id = get_method(env, klass, method, signature, is_static);
+        remove_local_ref(env, klass);
+
+        return method_id;
     }
 
     jobject wrapper::invoke_object_method(JNIEnv *env, const jclass &klass, const jobject &instance,
-                                          const jmethodID &method_id, const std::vector<jvalue> &parameters)
+                                         const jmethodID &method_id, const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(env);
 
@@ -217,7 +288,7 @@ namespace znb_kit
 
         EXCEPT_CHECK(env);
 
-        return add_local_ref(env, result);
+        return add_local_ref(env, result, __FILE__, __LINE__, __func__);
     }
 
     jbyte wrapper::invoke_byte_method(JNIEnv *env, const jclass &klass, const jobject &instance,
