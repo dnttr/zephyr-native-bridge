@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "ZNBKit/debug.hpp"
+#include "../../../include/ZNBKit/debug.hpp"
 #include "ZNBKit/vm_management.hpp"
 
 using namespace znb_kit;

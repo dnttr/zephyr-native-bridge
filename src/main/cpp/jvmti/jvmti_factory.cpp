@@ -13,7 +13,7 @@
 
 #include "ZNBKit/jvmti/jvmti_types.hpp"
 
-#include "ZNBKit/debug.hpp"
+#include "../../../../include/ZNBKit/debug.hpp"
 
 /*
  * For now include all JNI types here. It probably isn't good idea to include all of them until they're all implemented but who cares.

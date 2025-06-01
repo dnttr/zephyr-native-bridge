@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <unordered_map>
 
-#include "ZNBKit/debug.hpp"
+#include "../../../../include/ZNBKit/debug.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
 
 void znb_kit::jvmti_object::report_lacking_methods(std::unordered_multimap<std::string, reference> map,

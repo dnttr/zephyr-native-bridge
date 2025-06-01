@@ -7,13 +7,10 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "ZNBKit/debug.hpp"
+#include "../../../../../include/ZNBKit/debug.hpp"
 
 namespace znb_kit
 {
-    std::set<jobject> g_refs;
-    std::set<jobject> l_refs;
-
     bool look_for_exceptions(JNIEnv *env)
     {
         if (env->ExceptionCheck()) {
