@@ -65,14 +65,9 @@ std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::wrap_vm(JavaVM *jvm,
     return std::make_unique<vm_object>(JNI_VERSION_21, jvm, jvmti, jni);
 }
 
-void znb_kit::vm_management::cleanup_vm(JNIEnv *env, JavaVM *vm)
+void znb_kit::vm_management::cleanup_vm(JavaVM *vm)
 {
-    bool check_for_refs = wrapper::check_for_refs();
-
-    if (check_for_refs)
-    {
-        std::cerr << check_for_refs << std::endl;
-    }
+    wrapper::check_for_refs();
 
     if (vm) {
         vm->DestroyJavaVM();

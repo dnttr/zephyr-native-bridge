@@ -18,7 +18,15 @@ inline std::string get_path(const std::string& filePath) {
 
 #ifdef DEBUG
 #define debug_print(msg) \
-(std::cerr << "[DEBUG] " << get_path(__FILE__) << ":" << __LINE__ << " " << msg << std::endl)
+(std::cout << "[DEBUG] " << get_path(__FILE__) << ":" << __LINE__ << " " << msg << std::endl)
 #else
 #define debug_print(msg) do {} while (0)
 #endif
+
+#ifdef DEBUG
+#define debug_print_cerr(msg) \
+(std::cerr << "[DEBUG] " << get_path(__FILE__) << ":" << __LINE__ << " " << msg << std::endl)
+#else
+#define debug_print_cerr(msg) do {} while (0)
+#endif
+

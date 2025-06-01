@@ -33,7 +33,7 @@ void ffi_zm_open_session(JNIEnv *env, jobject)
 
 TEST_CASE_METHOD(method_proxy_fixture, "Method proxy initialization", "[method_proxy]") {
     SECTION("Method proxy initialization") {
-        auto klass = klass_signature(get_vm()->get_env(), "org/dnttr/zephyr/bridge/Native");
+        const auto klass = klass_signature(get_vm()->get_env(), "org/dnttr/zephyr/bridge/Native");
 
         const auto jni_env = vm->get_env();
         const auto jvmti_env = vm->get_jvmti()->get().get_owner();
@@ -49,7 +49,7 @@ TEST_CASE_METHOD(method_proxy_fixture, "Method proxy initialization", "[method_p
 
 
         auto mapped = jvmti.try_mapping_methods<void>(klass, jvm_methods_map);
-        size_t second = mapped.second;
-        std::cout << second << std::endl;
+        //TODO: finish the test
+        //move it somewhere else, it shouldn't be here
     }
 }

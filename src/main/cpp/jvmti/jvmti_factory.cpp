@@ -93,7 +93,7 @@ namespace znb_kit
      * Do I really need this piece of code? Who cares, ill just leave it here for now. 31/05/2025
      */
     template<typename T>
-    std::unique_ptr<method_signature<T>> jvmti_factory::create_method_instance(JNIEnv *, const klass_signature &, const std::string &, const std::string &, const std::optional<std::vector<std::string>> &, bool)
+    std::unique_ptr<method_signature<T>> jvmti_factory::create_method_instance(JNIEnv *, const klass_signature &, const std::string &name, const std::string &, const std::optional<std::vector<std::string>> &, bool)
     {
         debug_print("factory::create_method_instance() unhandled type for T in template for method: " + name);
         return nullptr;

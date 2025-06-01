@@ -80,13 +80,11 @@ namespace znb_kit
             const klass_signature &klass_signature,
             const std::unordered_multimap<std::string, reference> &map)
         {
-            std::cout << map.size() << std::endl;
             std::vector<native_method> mapped_methods;
             size_t total = 0;
 
-            (void([&](auto id) {
-              using CurrentType = typename decltype(id)::type;
-              std::cout << "what" << std::endl;
+            (void([&]<typename T0>([[maybe_unused]] T0 id) {
+              using CurrentType = typename T0::type;
               auto pair_result = this->create_mappings<CurrentType>(klass_signature, map);
               mapped_methods.insert(mapped_methods.end(), pair_result.first.begin(), pair_result.first.end());
               total += pair_result.second;

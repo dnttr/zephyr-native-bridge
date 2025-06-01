@@ -4,12 +4,16 @@
 
 #include "ZNBKit/jni/internal/wrapper.hpp"
 
+#include <vector>
+
+#include "ZNBKit/debug.hpp"
+
 namespace znb_kit
 {
     std::mutex global_tracker::mutex;
     std::unordered_set<jobject> global_tracker::global_refs;
 
-    void global_tracker::add(const jobject ref)
+    void global_tracker::add(const jobject &ref)
     {
         std::lock_guard lock(mutex);
 
@@ -19,7 +23,7 @@ namespace znb_kit
         }
     }
 
-    void global_tracker::remove(const jobject ref)
+    void global_tracker::remove(const jobject &ref)
     {
         std::lock_guard lock(mutex);
         global_refs.erase(ref);
@@ -31,15 +35,34 @@ namespace znb_kit
         return global_refs.size();
     }
 
-    bool wrapper::check_for_refs()
+    void wrapper::check_for_refs()
     {
         const bool is_global_empty = global_tracker::count() == 0;
         const bool is_local_empty = local_refs.empty();
 
-        return is_global_empty && is_local_empty;
+        if (!is_global_empty || !is_local_empty)
+        {
+            debug_print_cerr("WARNING - Potential memory leak detected");
+
+            debug_print_cerr("Global references count: " + std::to_string(global_tracker::count()));
+            debug_print_cerr("Local references count: " + std::to_string(local_refs.size()));
+
+            if (!is_global_empty)
+            {
+                debug_print_cerr("Global references are not empty, potential memory leak detected.");
+            }
+
+            if (!is_local_empty)
+            {
+                debug_print_cerr("Local references are not empty, potential memory leak detected.");
+            }
+        } else
+        {
+            debug_print_cerr("No references left. All good!");
+        }
     }
 
-    jobject wrapper::add_local_ref(JNIEnv *env, const jobject obj)
+    jobject wrapper::add_local_ref(JNIEnv *env, const jobject &obj)
     {
         if (env == nullptr)
         {
@@ -56,7 +79,7 @@ namespace znb_kit
         return ref;
     }
 
-    void wrapper::remove_local_ref(JNIEnv *env, const jobject obj)
+    void wrapper::remove_local_ref(JNIEnv *env, const jobject &obj)
     {
         if (env == nullptr)
         {
@@ -70,7 +93,7 @@ namespace znb_kit
         }
     }
 
-    jobject wrapper::add_global_ref(JNIEnv *env, const jobject obj)
+    jobject wrapper::add_global_ref(JNIEnv *env, const jobject &obj)
     {
         if (env == nullptr)
         {
@@ -87,7 +110,7 @@ namespace znb_kit
         return ref;
     }
 
-    void wrapper::remove_global_ref(JNIEnv *env, const jobject obj)
+    void wrapper::remove_global_ref(JNIEnv *env, const jobject &obj)
     {
         if (env == nullptr)
         {
@@ -145,7 +168,8 @@ namespace znb_kit
         if (is_static)
         {
             method = env->GetStaticMethodID(klass, method_name.c_str(), signature.c_str());
-        } else
+        }
+        else
         {
             method = env->GetMethodID(klass, method_name.c_str(), signature.c_str());
         }
@@ -154,7 +178,9 @@ namespace znb_kit
 
         if (method == nullptr)
         {
-            throw std::runtime_error("Method not found: " + method_name + " with signature: " + signature + " and static val: " + std::to_string(is_static));
+            throw std::runtime_error(
+                "Method not found: " + method_name + " with signature: " + signature + " and static val: " +
+                std::to_string(is_static));
         }
 
         return method;
@@ -168,7 +194,7 @@ namespace znb_kit
     }
 
     jobject wrapper::invoke_object_method(JNIEnv *env, const jclass &klass, const jobject &instance,
-                                          const jmethodID method_id, const std::vector<jvalue> &parameters)
+                                          const jmethodID &method_id, const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(env);
 
@@ -177,8 +203,10 @@ namespace znb_kit
 
         if (is_static)
         {
-            result = env->CallStaticObjectMethodA(klass , method_id, parameters.data());
-        } else {
+            result = env->CallStaticObjectMethodA(klass, method_id, parameters.data());
+        }
+        else
+        {
             if (instance == nullptr)
             {
                 throw std::invalid_argument("Variable 'instance' is null");
@@ -193,7 +221,7 @@ namespace znb_kit
     }
 
     jbyte wrapper::invoke_byte_method(JNIEnv *env, const jclass &klass, const jobject &instance,
-                                      const jmethodID method_id, const std::vector<jvalue> &parameters)
+                                      const jmethodID &method_id, const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(env);
 
@@ -203,7 +231,9 @@ namespace znb_kit
         if (is_static)
         {
             result = env->CallStaticByteMethodA(klass, method_id, parameters.data());
-        } else {
+        }
+        else
+        {
             if (instance == nullptr)
             {
                 throw std::invalid_argument("Variable 'instance' is null");
@@ -217,7 +247,8 @@ namespace znb_kit
         return result;
     }
 
-    jint wrapper::invoke_int_method(JNIEnv *env, const jclass &klass, const jobject &instance, const jmethodID method_id,
+    jint wrapper::invoke_int_method(JNIEnv *env, const jclass &klass, const jobject &instance,
+                                    const jmethodID &method_id,
                                     const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(env);
@@ -228,7 +259,9 @@ namespace znb_kit
         if (is_static)
         {
             result = env->CallStaticIntMethodA(klass, method_id, parameters.data());
-        } else {
+        }
+        else
+        {
             if (instance == nullptr)
             {
                 throw std::invalid_argument("Variable 'instance' is null");
@@ -243,7 +276,7 @@ namespace znb_kit
     }
 
     jlong wrapper::invoke_long_method(JNIEnv *env, const jclass &klass, const jobject &instance,
-                                      const jmethodID method_id, const std::vector<jvalue> &parameters)
+                                      const jmethodID &method_id, const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(env);
 
@@ -253,7 +286,9 @@ namespace znb_kit
         if (is_static)
         {
             result = env->CallStaticLongMethodA(klass, method_id, parameters.data());
-        } else {
+        }
+        else
+        {
             if (instance == nullptr)
             {
                 throw std::invalid_argument("Variable 'instance' is null");
@@ -268,7 +303,7 @@ namespace znb_kit
     }
 
     jshort wrapper::invoke_short_method(JNIEnv *env, const jclass &klass, const jobject &instance,
-                                        const jmethodID method_id, const std::vector<jvalue> &parameters)
+                                        const jmethodID &method_id, const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(env);
 
@@ -278,7 +313,9 @@ namespace znb_kit
         if (is_static)
         {
             result = env->CallStaticShortMethodA(klass, method_id, parameters.data());
-        } else {
+        }
+        else
+        {
             if (instance == nullptr)
             {
                 throw std::invalid_argument("Variable 'instance' is null");
@@ -293,7 +330,7 @@ namespace znb_kit
     }
 
     jfloat wrapper::invoke_float_method(JNIEnv *env, const jclass &klass, const jobject &instance,
-                                        const jmethodID method_id, const std::vector<jvalue> &parameters)
+                                        const jmethodID &method_id, const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(env);
 
@@ -303,7 +340,9 @@ namespace znb_kit
         if (is_static)
         {
             result = env->CallStaticFloatMethodA(klass, method_id, parameters.data());
-        } else {
+        }
+        else
+        {
             if (instance == nullptr)
             {
                 throw std::invalid_argument("Variable 'instance' is null");
@@ -317,8 +356,8 @@ namespace znb_kit
         return result;
     }
 
-    jdouble wrapper::invoke_double_method(JNIEnv *env, jclass &klass, jobject &instance,
-                                          const jmethodID method_id, const std::vector<jvalue> &parameters)
+    jdouble wrapper::invoke_double_method(JNIEnv *env, const jclass &klass, const jobject &instance,
+                                          const jmethodID &method_id, const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(env);
 
@@ -328,7 +367,9 @@ namespace znb_kit
         if (is_static)
         {
             result = env->CallStaticDoubleMethodA(klass, method_id, parameters.data());
-        } else {
+        }
+        else
+        {
             if (instance == nullptr)
             {
                 throw std::invalid_argument("Variable 'instance' is null");
@@ -342,7 +383,8 @@ namespace znb_kit
         return result;
     }
 
-    void wrapper::invoke_void_method(JNIEnv *env, const jclass &klass, const jobject &instance, const jmethodID method_id,
+    void wrapper::invoke_void_method(JNIEnv *env, const jclass &klass, const jobject &instance,
+                                     const jmethodID &method_id,
                                      const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(env);
@@ -351,7 +393,9 @@ namespace znb_kit
         if (is_static)
         {
             env->CallStaticVoidMethodA(klass, method_id, parameters.data());
-        } else {
+        }
+        else
+        {
             if (instance == nullptr)
             {
                 throw std::invalid_argument("Variable 'instance' is null");
