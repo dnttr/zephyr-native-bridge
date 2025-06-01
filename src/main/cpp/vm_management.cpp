@@ -4,7 +4,7 @@
 
 #include "ZNBKit/vm_management.hpp"
 
-#include "../../../include/ZNBKit/debug.hpp"
+#include "ZNBKit/debug.hpp"
 
 std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(const std::string &classpath)
 {
@@ -67,7 +67,12 @@ std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::wrap_vm(JavaVM *jvm,
 
 void znb_kit::vm_management::cleanup_vm(JNIEnv *env, JavaVM *vm)
 {
-    checkRemainingRefs();
+    bool check_for_refs = wrapper::check_for_refs();
+
+    if (check_for_refs)
+    {
+        std::cerr << check_for_refs << std::endl;
+    }
 
     if (vm) {
         vm->DestroyJavaVM();

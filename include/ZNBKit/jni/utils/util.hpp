@@ -10,12 +10,6 @@
 
 namespace znb_kit
 {
-    jmethodID get_method_id(JNIEnv *env, const jclass &klass, const std::string &method_name, const std::string &signature, bool is_static);
-
-    jmethodID get_method_id(JNIEnv *env, const std::string &klass_name, const std::string &method_name, const std::string &signature, bool is_static);
-
-    jclass get_klass(JNIEnv *env, const std::string &name);
-
     std::string get_string(JNIEnv *env, const jstring &string, bool release = true);
 
     void delete_references(JNIEnv *env, const std::vector<jobject> &references);
@@ -24,5 +18,5 @@ namespace znb_kit
 
     bool compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2);
 
-    std::vector<jobject> get_methods(JNIEnv *env, const jclass &klass);
+    std::vector<jobject> get_methods(JNIEnv *env, const jobject &instance);
 }

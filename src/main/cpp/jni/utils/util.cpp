@@ -7,87 +7,21 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "../../../../../include/ZNBKit/debug.hpp"
+#include "ZNBKit/debug.hpp"
+#include "ZNBKit/jni/internal/wrapper.hpp"
 
 namespace znb_kit
 {
-    bool look_for_exceptions(JNIEnv *env)
+    std::vector<jobject> get_methods(JNIEnv *env, const jobject &instance)
     {
-        if (env->ExceptionCheck()) {
-            env->ExceptionDescribe();
-            env->ExceptionClear();
-
-            return true;
-        }
-
-        return false;
-    }
-
-    jmethodID get_method_id(JNIEnv *env, const jclass &klass, const std::string &method_name,
-                                  const std::string &signature, const bool is_static)
-    {
-        if (is_static)
-        {
-            return env->GetStaticMethodID(klass, method_name.c_str(), signature.c_str());
-        }
-
-        return env->GetMethodID(klass, method_name.c_str(), signature.c_str());
-    }
-
-    jmethodID get_method_id(JNIEnv *env, const std::string &klass_name, const std::string &method_name,
-        const std::string &signature, const bool is_static)
-    {
-        printf("get_method_id: Looking up class '%s'\n", klass_name.c_str());
-
-        const auto klass = get_klass(env, klass_name);
-
-        if (klass == nullptr) {
-            printf("ERROR: get_klass returned NULL for '%s'\n", klass_name.c_str());
-            return nullptr;
-        }
-
-        printf("get_method_id: Found class %p, looking up method '%s' with signature '%s'\n",
-               klass, method_name.c_str(), signature.c_str());
-
-        jmethodID result;
-        if (is_static)
-        {
-            result = env->GetStaticMethodID(klass, method_name.c_str(), signature.c_str());
-        }
-        else
-        {
-            result = env->GetMethodID(klass, method_name.c_str(), signature.c_str());
-        }
-
-        printf("get_method_id: Method lookup result = %p\n", result);
-
-        // Check for exceptions
-        if (env->ExceptionCheck()) {
-            printf("Exception occurred during method lookup:\n");
-            env->ExceptionDescribe();
-            env->ExceptionClear();
-            result = nullptr;
-        }
-
-        return result;
-    }
-
-    std::vector<jobject> get_methods(JNIEnv *env, const jclass &klass)
-    {
-        const auto method_id = get_method_id(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
+        const auto method_id = wrapper::get_method(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
 
         if (method_id == nullptr)
         {
             return {};
         }
 
-        const auto array = reinterpret_cast<jobjectArray>(env->CallObjectMethod(klass, method_id));
-
-        if (look_for_exceptions(env))
-        {
-            throw std::runtime_error("Unable to get methods from class");
-        }
-
+        const auto array = reinterpret_cast<jobjectArray>(wrapper::invoke_object_method(env, nullptr, instance, method_id, {}));
         const auto array_size = env->GetArrayLength(array);
 
         std::vector<jobject> methods(array_size);
@@ -96,38 +30,19 @@ namespace znb_kit
         {
             methods[i] = env->GetObjectArrayElement(array, i);
 
-            if (look_for_exceptions(env))
-            {
-                throw std::runtime_error("Unable to get method from array");
-            }
+            EXCEPT_CHECK(env);
         }
 
-        trackDeleteLocalRef(env, array);
+        wrapper::remove_local_ref(env, array);
 
         return methods;
-    }
-
-    jclass get_klass(JNIEnv *env, const std::string &name)
-    {
-        const char *c_str = name.c_str();
-        const auto klass = env->FindClass(c_str);
-
-        if (look_for_exceptions(env))
-        {
-            throw std::runtime_error("Unable to find class '" + name + "'");
-        }
-
-        return klass;
     }
 
     std::string get_string(JNIEnv *env, const jstring &string, const bool release)
     {
         const char *key = env->GetStringUTFChars(string, nullptr);
 
-        if (look_for_exceptions(env))
-        {
-            throw std::runtime_error("Unable to get string from string");
-        }
+        EXCEPT_CHECK(env);
 
         if (key == nullptr)
         {
@@ -149,47 +64,17 @@ namespace znb_kit
     {
         for (const auto &reference : references)
         {
-            trackDeleteLocalRef(env, reference);
+            wrapper::remove_local_ref(env, reference);
         }
     }
 
-    std::vector<std::string> get_parameters(JNIEnv *env, const jobject &method)
+    std::vector<std::string> get_parameters(JNIEnv *env, const jobject &instance)
     {
-        if (method == nullptr)
-        {
-            debug_print("get_parameters() is unable to obtain parameters as provided method object is null");
-            return {};
-        }
+        const auto getParameterTypes_method_id  = wrapper::get_method(env, "java/lang/reflect/Method", "getParameterTypes", "()[Ljava/lang/Class;", false);
+        const auto getTypeName_method_id = wrapper::get_method(env, "java/lang/Class", "getTypeName", "()Ljava/lang/String;", false);
 
-        const auto getParameterTypes_method_id  = get_method_id(env, "java/lang/reflect/Method", "getParameterTypes", "()[Ljava/lang/Class;", false);
-
-        if (getParameterTypes_method_id == nullptr)
-        {
-            return {};
-        }
-
-        const auto getTypeName_method_id = znb_kit::get_method_id(env, "java/lang/Class", "getTypeName", "()Ljava/lang/String;", false);
-
-        if (getTypeName_method_id == nullptr)
-        {
-            return {};
-        }
-
-        const auto array = reinterpret_cast<jobjectArray>(env->CallObjectMethod(method, getParameterTypes_method_id));
-
-        if (look_for_exceptions(env))
-        {
-            throw std::runtime_error("Unable to get parameter types");
-        }
-
+        const auto array = reinterpret_cast<jobjectArray>(wrapper::invoke_object_method(env, nullptr, instance, getParameterTypes_method_id, {}));
         const auto array_size = env->GetArrayLength(array);
-
-        if (array == nullptr)
-        {
-            debug_print("get_parameters() is unable to get array.");
-
-            return {};
-        }
 
         std::vector<std::string> methods(array_size);
 
@@ -197,26 +82,20 @@ namespace znb_kit
         {
             const auto element = env->GetObjectArrayElement(array, i);
 
-            if (look_for_exceptions(env))
-            {
-                throw std::runtime_error("Unable to get element from array");
-            }
+            EXCEPT_CHECK(env);
 
-            const auto jstr = reinterpret_cast<jstring>(env->CallObjectMethod(element, getTypeName_method_id));
+            const auto jstr = reinterpret_cast<jstring>(wrapper::invoke_object_method(env, nullptr, element, getTypeName_method_id, {}));
 
-            if (look_for_exceptions(env))
-            {
-                throw std::runtime_error("Unable to get element from array");
-            }
+            EXCEPT_CHECK(env);
 
             const auto key = get_string(env, jstr);
             methods[i] = key;
 
-            trackDeleteLocalRef(env, jstr);
-            trackDeleteLocalRef(env, element);
+            wrapper::remove_local_ref(env, jstr);
+            wrapper::remove_local_ref(env, element);
         }
 
-        trackDeleteLocalRef(env, array);
+        wrapper::remove_local_ref(env, array);
 
         return methods;
     }
@@ -233,7 +112,7 @@ namespace znb_kit
             return false;
         }
 
-        return std::ranges::any_of(v2, [&set](const std::string &s) {
+        return std::ranges::all_of(v2, [&set](const std::string &s) {
             return set.contains(s);
         });
     }

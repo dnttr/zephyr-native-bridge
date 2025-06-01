@@ -13,7 +13,7 @@
 
 #include "ZNBKit/jvmti/jvmti_types.hpp"
 
-#include "../../../../include/ZNBKit/debug.hpp"
+#include "ZNBKit/debug.hpp"
 
 /*
  * For now include all JNI types here. It probably isn't good idea to include all of them until they're all implemented but who cares.
@@ -183,7 +183,7 @@ namespace znb_kit
         {
             if (object)
             {
-                trackDeleteLocalRef(jni, object);
+                jni->DeleteLocalRef(object);
             }
         }
 
@@ -205,7 +205,7 @@ namespace znb_kit
                 descriptors.push_back(std::move(method_desc));
             }
 
-            trackDeleteLocalRef(jni, method_obj);
+            jni->DeleteLocalRef(method_obj);
         }
         return descriptors;
     }

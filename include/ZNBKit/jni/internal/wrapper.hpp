@@ -10,6 +10,11 @@
 
 #include "ZNBKit/debug.hpp"
 
+#define VAR_CHECK(env) \
+    if (env == nullptr) { \
+        throw std::invalid_argument("Variable 'env' is null"); \
+    }
+
 namespace znb_kit
 {
     inline thread_local std::unordered_set<jobject> local_refs;
@@ -20,175 +25,63 @@ namespace znb_kit
         static std::unordered_set<jobject> global_refs;
 
     public:
-        static void add(const jobject ref)
-        {
-            std::lock_guard lock(mutex);
+        static void add(jobject ref);
 
-            if (ref != nullptr)
-            {
-                global_refs.insert(ref);
-            }
-        }
+        static void remove(jobject ref);
 
-        static void remove(const jobject ref)
-        {
-            std::lock_guard lock(mutex);
-            global_refs.erase(ref);
-        }
-
-        static size_t count()
-        {
-            std::lock_guard lock(mutex);
-            return global_refs.size();
-        }
+        static size_t count();
     };
-
-    std::mutex global_tracker::mutex;
-    std::unordered_set<jobject> global_tracker::global_refs;
 
     class wrapper
     {
     public:
-        static jobject add_local_ref(JNIEnv *env, const jobject obj)
-        {
-            if (env == nullptr)
-            {
-                throw std::invalid_argument("Variable 'env' is null");
-            }
+#define EXCEPT_CHECK(env) \
+    if (env->ExceptionCheck()) { \
+        env->ExceptionDescribe(); \
+        env->ExceptionClear(); \
+        throw std::runtime_error("JNI Exception occurred"); \
+    }
 
-            const auto ref = env->NewLocalRef(obj);
+        static bool check_for_refs();
 
-            if (ref)
-            {
-                local_refs.insert(ref);
-            }
+        static jobject add_local_ref(JNIEnv *env, jobject obj);
 
-            return ref;
-        }
+        static void remove_local_ref(JNIEnv *env, jobject obj);
 
-        static void remove_local_ref(JNIEnv *env, const jobject obj)
-        {
-            if (env == nullptr)
-            {
-                throw std::invalid_argument("Variable 'env' is null");
-            }
+        static jobject add_global_ref(JNIEnv *env, jobject obj);
 
-            if (obj)
-            {
-                local_refs.erase(obj);
-                env->DeleteLocalRef(obj);
-            }
-        }
+        static void remove_global_ref(JNIEnv *env, jobject obj);
 
-        static jobject add_global_ref(JNIEnv *env, const jobject obj)
-        {
-            if (env == nullptr)
-            {
-                throw std::invalid_argument("Variable 'env' is null");
-            }
+        static jclass search_for_class(JNIEnv *env, const std::string &name);
 
-            const auto ref = env->NewGlobalRef(obj);
+        static jmethodID get_method(JNIEnv *env, const jclass &klass, const std::string &method_name,
+                                    const std::string &signature, bool is_static);
 
-            if (ref)
-            {
-                global_tracker::add(ref);
-            }
+        static jmethodID get_method(JNIEnv *env, const std::string &name, const std::string &method,
+                                    const std::string &signature, bool is_static);
 
-            return ref;
-        }
+        static jobject invoke_object_method(JNIEnv *env, const jclass &klass, const jobject &instance,
+                                            jmethodID method_id, const std::vector<jvalue> &parameters);
 
-        static void remove_global_ref(JNIEnv *env, const jobject obj)
-        {
-            if (env == nullptr)
-            {
-                throw std::invalid_argument("Variable 'env' is null");
-            }
+        static jbyte invoke_byte_method(JNIEnv *env, const jclass &klass, const jobject &instance,
+                                        jmethodID method_id, const std::vector<jvalue> &parameters);
 
-            if (obj)
-            {
-                global_tracker::remove(obj);
-                env->DeleteGlobalRef(obj);
-            }
-        }
+        static jint invoke_int_method(JNIEnv *env, const jclass &klass, const jobject &instance,
+                                      jmethodID method_id, const std::vector<jvalue> &parameters);
 
-        static jclass search_for_class(JNIEnv *env, const std::string &name)
-        {
-            if (env == nullptr)
-            {
-                throw std::invalid_argument("Variable 'env' is null");
-            }
+        static jlong invoke_long_method(JNIEnv *env, const jclass &klass, const jobject &instance,
+                                        jmethodID method_id, const std::vector<jvalue> &parameters);
 
-            if (name.empty())
-            {
-                throw std::invalid_argument("Class name cannot be empty");
-            }
+        static jshort invoke_short_method(JNIEnv *env, const jclass &klass, const jobject &instance,
+                                          jmethodID method_id, const std::vector<jvalue> &parameters);
 
-            const auto klass = env->FindClass(name.c_str());
+        static jfloat invoke_float_method(JNIEnv *env, const jclass &klass, const jobject &instance,
+                                          jmethodID method_id, const std::vector<jvalue> &parameters);
 
-            if (klass == nullptr)
-            {
-                throw std::runtime_error("Cannot find class '" + name + "'");
-            }
+        static jdouble invoke_double_method(JNIEnv *env, jclass &klass, jobject &instance, jmethodID method_id,
+                                            const std::vector<jvalue> &parameters);
 
-            local_refs.insert(klass);
-
-            return klass;
-        }
-
-        static jmethodID get_method(JNIEnv *env, const jclass &klass, const std::string &method_name, const std::string &signature, const bool is_static)
-        {
-            if (env == nullptr || klass == nullptr)
-            {
-                throw std::invalid_argument("Variable 'env' or 'klass' is null");
-            }
-
-            if (method_name.empty() || signature.empty())
-            {
-                throw std::invalid_argument("Method name or signature cannot be empty");
-            }
-
-            jmethodID method = nullptr;
-
-            if (is_static)
-            {
-                method = env->GetStaticMethodID(klass, method_name.c_str(), signature.c_str());
-            } else
-            {
-                method = env->GetMethodID(klass, method_name.c_str(), signature.c_str());
-            }
-
-            if (method == nullptr)
-            {
-                throw std::runtime_error("Method not found: " + method_name + " with signature: " + signature + " and static val: " + std::to_string(is_static));
-            }
-
-            return method;
-        }
-
-        static jobject invoke_object_method(JNIEnv *env, const jclass klass, const jmethodID method_id, std::vector<jvalue> &parameters, const bool is_static)
-        {
-            if (env == nullptr || klass == nullptr || method_id == nullptr)
-            {
-                throw std::invalid_argument("Variable 'env' or 'klass' or 'method_id' is null");
-            }
-
-            jobject result;
-
-            if (is_static)
-            {
-                result = env->CallStaticObjectMethod(klass , method_id, parameters.data());
-            } else {
-                result = env->CallObjectMethod(klass, method_id, parameters.data());
-            }
-
-            if (env->ExceptionCheck())
-            {
-                env->ExceptionDescribe();
-                env->ExceptionClear();
-                throw std::runtime_error("Failed to invoke object method (static val: " + std::to_string(is_static) + ")");
-            }
-
-            return add_local_ref(env, result);
-        }
+        static void invoke_void_method(JNIEnv *env, const jclass &klass, const jobject &instance, jmethodID method_id,
+                                       const std::vector<jvalue> &parameters);
     };
 }

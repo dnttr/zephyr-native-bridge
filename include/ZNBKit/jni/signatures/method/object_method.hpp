@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "ZNBKit/jni/internal/wrapper.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
 
 namespace znb_kit
@@ -15,11 +16,7 @@ namespace znb_kit
 
         jobject invoke(const jobject &instance, std::vector<jvalue> &parameters) override
         {
-            if (is_static) {
-                return env->CallStaticObjectMethod(get_owner(), get_identity(), parameters.data());
-            }
-
-            return env->CallObjectMethod(instance, get_identity(), parameters.data());
+            return wrapper::invoke_object_method(env, get_owner(), instance, get_identity(), parameters);
         }
     };
 }

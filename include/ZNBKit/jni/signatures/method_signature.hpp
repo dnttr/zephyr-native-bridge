@@ -28,34 +28,19 @@ namespace znb_kit
 
         [[nodiscard]] jmethodID build_identity() const
         {
-
             if (owner == nullptr || env == nullptr)
             {
                 throw std::runtime_error("method_signature::build_identity: owner or env is null for method '" + name + "' with signature '" + signature + "'");
             }
 
-            const jclass klass = owner->get_owner();
+            const auto klass = owner->get_owner();
 
             if (klass == nullptr)
             {
                 throw std::runtime_error("method_signature::build_identity: owner->get_owner() returned null jclass for method '" + name + "' with signature '" + signature + "' (declaring class: unknown)");
             }
 
-            const auto method_id_val = get_method_id(env, klass, name, signature, this->is_static);
-
-            if (env->ExceptionCheck())
-            {
-                env->ExceptionDescribe();
-                env->ExceptionClear();
-                throw std::runtime_error("JNI exception occurred while getting method ID for '" + name + "' with signature '" + signature + "' in class (jclass was not null).");
-            }
-
-            if (method_id_val == nullptr)
-            {
-                throw std::runtime_error("Unable to get method ID (returned null) for '" + name + "' with signature '" + signature + "' in class (jclass was not null).");
-            }
-
-            return method_id_val;
+            return wrapper::get_method(env, klass, name, signature, this->is_static);
         }
     public:
 

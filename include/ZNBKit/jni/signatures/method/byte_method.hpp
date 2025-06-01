@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "ZNBKit/jni/internal/wrapper.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
 
 namespace znb_kit
@@ -15,11 +16,7 @@ namespace znb_kit
 
         jbyte invoke(const jobject &instance, std::vector<jvalue> &parameters) override
         {
-            if (is_static) {
-                return env->CallStaticByteMethod(get_owner(), get_identity(), parameters.data());
-            }
-
-            return env->CallByteMethod(instance, get_identity(), parameters.data());
+            return wrapper::invoke_byte_method(env, get_owner(), instance, get_identity(), parameters);
         }
     };
 }

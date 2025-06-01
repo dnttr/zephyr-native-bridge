@@ -7,6 +7,7 @@
 #include <jni.h>
 #include <string>
 
+#include "ZNBKit/jni/internal/wrapper.hpp"
 #include "ZNBKit/jni/utils/util.hpp"
 
 namespace znb_kit
@@ -19,18 +20,9 @@ namespace znb_kit
     public:
         klass_signature(JNIEnv *env, const std::string &klass_name): env(env)
         {
-            if (env == nullptr || klass_name.empty())
-            {
-                throw std::invalid_argument("JNIEnv or class is invalid");
-            }
-
-            const auto klass = get_klass(env, klass_name);
-            if (klass == nullptr) {
-                throw std::runtime_error("Unable to find class " + klass_name);
-            }
-
-            owner = reinterpret_cast<jclass>(trackNewGlobalRef(env, klass));
-            trackDeleteLocalRef(env, klass);
+            const auto klass = wrapper::search_for_class(env, klass_name);
+            owner = reinterpret_cast<jclass>(wrapper::add_global_ref(env, klass));
+            wrapper::remove_local_ref(env, klass);
         }
 
         klass_signature(JNIEnv *env, jclass owner)
@@ -41,21 +33,21 @@ namespace znb_kit
             }
 
             this->env = env;
-            this->owner = reinterpret_cast<jclass>(trackNewGlobalRef(env, owner));
+            this->owner = reinterpret_cast<jclass>(wrapper::add_global_ref(env, owner));
         }
 
         ~klass_signature()
         {
             if (owner != nullptr && env != nullptr)
             {
-                trackDeleteGlobalRef(env, owner);
+                wrapper::remove_global_ref(env, owner);
                 owner = nullptr;
             }
         }
 
         klass_signature(const klass_signature& other) : env(other.env) {
             if (other.owner) {
-                owner = reinterpret_cast<jclass>(trackNewGlobalRef(env, other.owner));
+                owner = reinterpret_cast<jclass>(wrapper::add_global_ref(env, other.owner));
             } else {
                 owner = nullptr;
             }
@@ -64,12 +56,12 @@ namespace znb_kit
         klass_signature& operator=(const klass_signature& other) {
             if (this != &other) {
                 if (owner && env) {
-                    trackDeleteGlobalRef(env, owner);
+                    wrapper::remove_global_ref(env, owner);
                 }
 
                 env = other.env;
                 if (other.owner) {
-                    owner = reinterpret_cast<jclass>(trackNewGlobalRef(env, other.owner));
+                    owner = reinterpret_cast<jclass>(wrapper::add_global_ref(env, other.owner));
                 } else {
                     owner = nullptr;
                 }
