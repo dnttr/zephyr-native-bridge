@@ -20,7 +20,7 @@ namespace znb_kit
         {
             if (object != nullptr && vm != nullptr)
             {
-                vm->get_env()->DeleteGlobalRef(object);
+                trackNewGlobalRef(vm->get_env(), object);
                 object = nullptr;
             }
         }
@@ -43,8 +43,8 @@ namespace znb_kit
                 throw std::runtime_error("Unable to create new instance");
             }
 
-            object = env->NewGlobalRef(obj);
-            env->DeleteLocalRef(obj);
+            object = trackNewGlobalRef(env, obj);
+            trackDeleteLocalRef(env, obj);
         }
 
         instance(const instance &other) = delete;

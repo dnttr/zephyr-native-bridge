@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <jvmti.h>
 #include <ranges>
 #include <stdexcept>
@@ -20,6 +21,12 @@ namespace znb_kit
     {
         jvmtiEnv *jvmti;
         JNIEnv *jni;
+
+        static void report_lacking_methods(std::unordered_multimap<std::string, reference>,
+                                           std::vector<native_method> &filtered);
+
+        template<typename T>
+        struct type_tag { using type = T; };
 
     public:
         explicit jvmti_object(JNIEnv *new_jni, jvmtiEnv *new_jvmti): jvmti(new_jvmti), jni(new_jni)
@@ -63,7 +70,7 @@ namespace znb_kit
 
             if (size != map.size())
             {
-                //TODO: report missing methods, too lazy to do it now
+                report_lacking_methods(map, filtered_mappings);
             }
             return std::make_pair(filtered_mappings, size);
         }
@@ -73,15 +80,18 @@ namespace znb_kit
             const klass_signature &klass_signature,
             const std::unordered_multimap<std::string, reference> &map)
         {
+            std::cout << map.size() << std::endl;
             std::vector<native_method> mapped_methods;
             size_t total = 0;
 
-            ([&]
-            {
-                auto pair_result = create_mappings<Ts>(klass_signature, map);
-                mapped_methods.insert(mapped_methods.end(), pair_result.first.begin(), pair_result.first.end());
-                total += pair_result.second;
-            }(), ...);
+            (void([&](auto id) {
+              using CurrentType = typename decltype(id)::type;
+              std::cout << "what" << std::endl;
+              auto pair_result = this->create_mappings<CurrentType>(klass_signature, map);
+              mapped_methods.insert(mapped_methods.end(), pair_result.first.begin(), pair_result.first.end());
+              total += pair_result.second;
+          }(type_tag<Ts>{})), ...);
+
 
             return {mapped_methods, total};
         }

@@ -2,6 +2,8 @@
 // Created by Damian Netter on 11/05/2025.
 //
 
+#include <iostream>
+
 #include "ZNBKit/setup.hpp"
 #include "ZNBKit/jni/instance.hpp"
 #include "ZNBKit/jni/signatures/method/string_method.hpp"
@@ -22,51 +24,32 @@
 using namespace znb_kit;
 
 struct method_proxy_fixture {
-    std::shared_ptr<klass_signature> klass;
-
-    method_proxy_fixture()
-      : klass{ std::make_shared<klass_signature>(get_vm()->get_env(), "Native") }
-    {}
 };
 
+void ffi_zm_open_session(JNIEnv *env, jobject)
+{
+    std::cout << "ffi_zm_open_session called" << std::endl;
+}
+
 TEST_CASE_METHOD(method_proxy_fixture, "Method proxy initialization", "[method_proxy]") {
-    SECTION("Klass proxy initialization") {
-        REQUIRE(klass);
-    }
-
     SECTION("Method proxy initialization") {
-        std::string native_void_name{"native_method1"};
-        std::string native_void_signature{"()V"};
+        auto klass = klass_signature(get_vm()->get_env(), "org/dnttr/zephyr/bridge/Native");
 
-        const void_method m_v{ get_vm()->get_env(),
-                        klass,
-                        native_void_name,
-                        native_void_signature,
-                        std::nullopt,
-                        false };
-        REQUIRE(m_v.get_owner());
+        const auto jni_env = vm->get_env();
+        const auto jvmti_env = vm->get_jvmti()->get().get_owner();
 
-        std::string string_name{"y"};
-        std::string string_signature{"()Ljava/lang/String;"};
+        if (jvmti_env == nullptr || jni_env == nullptr)
+        {
+            std::cout << "jvmti_env is null" << std::endl;
+        }
 
-        string_method m_s{ get_vm()->get_env(),
-                        klass,
-                        string_name,
-                        string_signature,
-                        std::nullopt,
-                        false };
+        jvmti_object jvmti(jni_env, jvmti_env);
+        const std::unordered_multimap<std::string, reference> jvm_methods_map = {
+            {"native_method1", reference(&ffi_zm_open_session, {})}};
 
-        REQUIRE(m_s.get_owner());
 
-        std::string instance_name = "<init>";
-        std::string instance_signature = "()V";
-
-        auto method = void_method(vm->get_env(), klass, instance_name, instance_signature, std::nullopt, false);
-
-        auto klass_instance = instance(get_vm(), method, {});
-        REQUIRE(klass_instance.get_owner());
-
-        std::vector<jvalue> empty_args;
-        auto invoke_and_transform = m_s.invoke_and_transform(vm->get_env(), klass_instance.get_owner(), empty_args);
+        auto mapped = jvmti.try_mapping_methods<void>(klass, jvm_methods_map);
+        size_t second = mapped.second;
+        std::cout << second << std::endl;
     }
 }

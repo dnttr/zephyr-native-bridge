@@ -183,7 +183,7 @@ namespace znb_kit
         {
             if (object)
             {
-                jni->DeleteLocalRef(object);
+                trackDeleteLocalRef(jni, object);
             }
         }
 
@@ -204,7 +204,8 @@ namespace znb_kit
             if (auto method_desc = jvmti_factory::get_method_signature<T>(jni, jvmti, owner_ks, method_obj)) {
                 descriptors.push_back(std::move(method_desc));
             }
-            jni->DeleteLocalRef(method_obj);
+
+            trackDeleteLocalRef(jni, method_obj);
         }
         return descriptors;
     }

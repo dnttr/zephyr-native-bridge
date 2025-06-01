@@ -29,8 +29,8 @@ namespace znb_kit
                 throw std::runtime_error("Unable to find class " + klass_name);
             }
 
-            owner = reinterpret_cast<jclass>(env->NewGlobalRef(klass));
-            env->DeleteLocalRef(klass);
+            owner = reinterpret_cast<jclass>(trackNewGlobalRef(env, klass));
+            trackDeleteLocalRef(env, klass);
         }
 
         klass_signature(JNIEnv *env, jclass owner)
@@ -41,17 +41,40 @@ namespace znb_kit
             }
 
             this->env = env;
-            this->owner = reinterpret_cast<jclass>(env->NewGlobalRef(owner));
-            env->DeleteGlobalRef(owner);
+            this->owner = reinterpret_cast<jclass>(trackNewGlobalRef(env, owner));
         }
 
         ~klass_signature()
         {
             if (owner != nullptr && env != nullptr)
             {
-                env->DeleteGlobalRef(owner);
+                trackDeleteGlobalRef(env, owner);
                 owner = nullptr;
             }
+        }
+
+        klass_signature(const klass_signature& other) : env(other.env) {
+            if (other.owner) {
+                owner = reinterpret_cast<jclass>(trackNewGlobalRef(env, other.owner));
+            } else {
+                owner = nullptr;
+            }
+        }
+
+        klass_signature& operator=(const klass_signature& other) {
+            if (this != &other) {
+                if (owner && env) {
+                    trackDeleteGlobalRef(env, owner);
+                }
+
+                env = other.env;
+                if (other.owner) {
+                    owner = reinterpret_cast<jclass>(trackNewGlobalRef(env, other.owner));
+                } else {
+                    owner = nullptr;
+                }
+            }
+            return *this;
         }
 
         [[nodiscard]] jclass get_owner() const

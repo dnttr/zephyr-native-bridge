@@ -58,5 +58,7 @@ namespace znb_kit
         static std::vector<native_method> map_methods(
             const std::unordered_multimap<std::string, reference> &map,
             const std::vector<std::unique_ptr<method_signature<T>>> &methods);
+
+        //static bool register_methods();
     };
 }

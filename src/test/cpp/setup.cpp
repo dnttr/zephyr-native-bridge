@@ -14,5 +14,9 @@ int main(const int argc, char* argv[]) {
 
     vm = vm_management::create_and_wrap_vm(ZNI_DST);
 
-    return session.run(argc, argv);
+    const int out = session.run(argc, argv);
+
+    vm_management::cleanup_vm(vm->get_env(), vm->get_owner());
+
+    return out;
 }

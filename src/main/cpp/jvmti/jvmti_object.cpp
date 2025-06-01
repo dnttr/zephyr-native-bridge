@@ -5,19 +5,18 @@
 #include "ZNBKit/jvmti/jvmti_object.hpp"
 
 #include <algorithm>
-#include <map>
 #include <unordered_map>
 
 #include "ZNBKit/debug.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
 
-void report_lacking_methods(std::multimap<std::string, znb_kit::reference> map,
-    std::vector<JNINativeMethod> &filtered)
+void znb_kit::jvmti_object::report_lacking_methods(std::unordered_multimap<std::string, reference> map,
+    std::vector<native_method> &filtered)
 {
     for (const auto& name : map | std::views::keys)
     {
-        auto it = std::ranges::find_if(filtered, [&name](const JNINativeMethod& method) {
-            return name == method.name;
+        auto it = std::ranges::find_if(filtered, [&name](const znb_kit::native_method& method) {
+            return name == method.name_buffer.data();
         });
 
         if (it == filtered.end())

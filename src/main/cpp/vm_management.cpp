@@ -65,6 +65,15 @@ std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::wrap_vm(JavaVM *jvm,
     return std::make_unique<vm_object>(JNI_VERSION_21, jvm, jvmti, jni);
 }
 
+void znb_kit::vm_management::cleanup_vm(JNIEnv *env, JavaVM *vm)
+{
+    checkRemainingRefs();
+
+    if (vm) {
+        vm->DestroyJavaVM();
+    }
+}
+
 jvmtiCapabilities znb_kit::vm_management::get_capabilities(const jvmtiEnv *jvmti, const jvmti_data data)
 {
     if (jvmti == nullptr)

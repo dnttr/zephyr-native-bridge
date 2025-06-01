@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include "ZNBKit/jni/signatures/klass_signature.hpp"
 
@@ -27,14 +28,34 @@ namespace znb_kit
 
         [[nodiscard]] jmethodID build_identity() const
         {
-            const auto identity = get_method_id(env, owner->get_owner(), name, signature, is_static);
 
-            if (identity == nullptr)
+            if (owner == nullptr || env == nullptr)
             {
-                throw std::runtime_error("Unable to construct method identity for '" + name + "' with signature '" + signature + "'");
+                throw std::runtime_error("method_signature::build_identity: owner or env is null for method '" + name + "' with signature '" + signature + "'");
             }
 
-            return identity;
+            jclass klass = owner->get_owner();
+
+            if (klass == nullptr)
+            {
+                throw std::runtime_error("method_signature::build_identity: owner->get_owner() returned null jclass for method '" + name + "' with signature '" + signature + "' (declaring class: unknown)");
+            }
+
+            const auto method_id_val = get_method_id(env, klass, name, signature, this->is_static);
+
+            if (env->ExceptionCheck())
+            {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+                throw std::runtime_error("JNI exception occurred while getting method ID for '" + name + "' with signature '" + signature + "' in class (jclass was not null).");
+            }
+
+            if (method_id_val == nullptr)
+            {
+                throw std::runtime_error("Unable to get method ID (returned null) for '" + name + "' with signature '" + signature + "' in class (jclass was not null).");
+            }
+
+            return method_id_val;
         }
     public:
 
@@ -45,13 +66,13 @@ namespace znb_kit
 
         virtual ~method_signature() = default;
 
-        method_signature(JNIEnv *env, std::shared_ptr<klass_signature> owner, const std::string &name, const std::string &signature, std::optional<std::vector<std::string>> parameters, const bool is_static)
+        method_signature(JNIEnv *env, std::shared_ptr<klass_signature> owner, std::string name, std::string signature, std::optional<std::vector<std::string>> parameters, const bool is_static)
             :
             env(env),
             owner(std::move(owner)),
             is_static(is_static),
-            name(name),
-            signature(signature),
+            name(std::move(name)),
+            signature(std::move(signature)),
             parameters(std::move(parameters))
         {
             identity = build_identity();
