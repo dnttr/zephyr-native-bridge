@@ -30,7 +30,7 @@ namespace znb_kit
         {
             if (owner == nullptr || env == nullptr)
             {
-                throw std::runtime_error("method_signature::build_identity: owner or env is null for method '" + name + "' with signature '" + signature + "'");
+                throw std::runtime_error("method_signature::build_identity: owner or jni is null for method '" + name + "' with signature '" + signature + "'");
             }
 
             const auto klass = owner->get_owner();
