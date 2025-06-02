@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <iostream>
 #include <jvmti.h>
 #include <ranges>
 #include <stdexcept>
@@ -93,8 +92,6 @@ namespace znb_kit
 
             return {mapped_methods, total};
         }
-
-        static void clear_mapped_methods(const std::vector<JNINativeMethod> &vector);
 
         [[nodiscard]] jvmtiEnv *get_owner() const { return jvmti; }
     };

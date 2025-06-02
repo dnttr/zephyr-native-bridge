@@ -100,7 +100,7 @@ namespace znb_kit
     }
 
     template <typename T>
-    std::unique_ptr<method_signature<T>> jvmti_factory::get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, const klass_signature &owner_ks, const jobject &method) // Parameter changed to const&
+    std::unique_ptr<method_signature<T>> jvmti_factory::get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, const klass_signature &owner_ks, const jobject &method)
     {
         const auto method_id = jni->FromReflectedMethod(method);
         if (!method_id) {

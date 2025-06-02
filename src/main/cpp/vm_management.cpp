@@ -68,7 +68,7 @@ std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::wrap_vm(JavaVM *jvm,
 
 void znb_kit::vm_management::cleanup_vm(JavaVM *vm)
 {
-    wrapper::check_for_refs();
+    wrapper::check_for_corruption();
 
     if (vm) {
         vm->DestroyJavaVM();

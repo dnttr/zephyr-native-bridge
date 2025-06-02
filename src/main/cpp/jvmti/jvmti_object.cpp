@@ -15,7 +15,7 @@ void znb_kit::jvmti_object::report_lacking_methods(std::unordered_multimap<std::
 {
     for (const auto& name : map | std::views::keys)
     {
-        auto it = std::ranges::find_if(filtered, [&name](const znb_kit::native_method& method) {
+        auto it = std::ranges::find_if(filtered, [&name](const native_method& method) {
             return name == method.name_buffer.data();
         });
 
@@ -35,14 +35,5 @@ void znb_kit::jvmti_object::report_lacking_methods(std::unordered_multimap<std::
                 }
             }
         }
-    }
-}
-
-void znb_kit::jvmti_object::clear_mapped_methods(const std::vector<JNINativeMethod> &vector)
-{
-    for (const auto native_method : vector)
-    {
-        free(native_method.name);
-        free(native_method.signature);
     }
 }

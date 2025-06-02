@@ -4,15 +4,15 @@
 
 #pragma once
 
+#include <jni.h>
+#include <jvmti.h>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include <jni.h>
-#include <jvmti.h>
-
+#include "ZNBKit/jni/internal/natives.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
 #include "ZNBKit/jvmti/jvmti_types.hpp"
 
@@ -58,7 +58,5 @@ namespace znb_kit
         static std::vector<native_method> map_methods(
             const std::unordered_multimap<std::string, reference> &map,
             const std::vector<std::unique_ptr<method_signature<T>>> &methods);
-
-        //static bool register_methods();
     };
 }

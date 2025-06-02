@@ -14,6 +14,8 @@ namespace znb_kit
     std::unordered_set<jobject> global_tracker::global_refs;
     std::unordered_map<jobject, ref_info> global_tracker::global_ref_sources;
 
+    std::unordered_map<std::string, size_t> wrapper::tracked_native_classes;
+
     void global_tracker::add(const jobject &ref, const std::string &file, int line, const std::string &method)
     {
         std::lock_guard lock(mutex);
@@ -60,14 +62,15 @@ namespace znb_kit
         }
     }
 
-    void wrapper::check_for_refs()
+    void wrapper::check_for_corruption()
     {
         const bool is_global_empty = global_tracker::count() == 0;
         const bool is_local_empty = local_refs.empty();
+        const bool are_natives_empty = tracked_native_classes.empty();
 
         if (!is_global_empty || !is_local_empty)
         {
-            debug_print_cerr("WARNING - Potential memory leak detected");
+            debug_print_cerr("Warning: References are not empty.");
 
             debug_print_cerr("Global references count: " + std::to_string(global_tracker::count()));
             debug_print_cerr("Local references count: " + std::to_string(local_refs.size()));
@@ -83,10 +86,23 @@ namespace znb_kit
                 debug_print_cerr("Local references are not empty, potential memory leak detected.");
                 dump_local_refs();
             }
-        } else
-        {
-            debug_print_cerr("No references left. All good i think, unless not using wrapper, then well, you are on your own. :>");
+
+            return;
         }
+
+        if (are_natives_empty)
+        {
+            debug_print_cerr("Warning: Tracked native classes are not empty.");
+
+            for (const auto&[name, natives] : tracked_native_classes)
+            {
+                debug_print_cerr("Class " + name + " has " + std::to_string(natives) + " references which were not deleted.");
+            }
+
+            return;
+        }
+
+        debug_print_cerr("No references left. All good i think, unless not using wrapper, then well, you are on your own. :>");
     }
 
     void wrapper::dump_local_refs()
@@ -115,10 +131,7 @@ namespace znb_kit
                                   const std::string &file, int line,
                                   const std::string &method)
     {
-        if (env == nullptr)
-        {
-            throw std::invalid_argument("Variable 'env' is null");
-        }
+        VAR_CHECK(env);
 
         const auto ref = env->NewLocalRef(obj);
 
@@ -133,10 +146,7 @@ namespace znb_kit
 
     void wrapper::remove_local_ref(JNIEnv *env, const jobject &obj)
     {
-        if (env == nullptr)
-        {
-            throw std::invalid_argument("Variable 'env' is null");
-        }
+        VAR_CHECK(env);
 
         if (obj)
         {
@@ -150,10 +160,7 @@ namespace znb_kit
                                    const std::string &file, int line,
                                    const std::string &method)
     {
-        if (env == nullptr)
-        {
-            throw std::invalid_argument("Variable 'env' is null");
-        }
+        VAR_CHECK(env);
 
         const auto ref = env->NewGlobalRef(obj);
 
@@ -167,10 +174,7 @@ namespace znb_kit
 
     void wrapper::remove_global_ref(JNIEnv *env, const jobject &obj)
     {
-        if (env == nullptr)
-        {
-            throw std::invalid_argument("Variable 'env' is null");
-        }
+        VAR_CHECK(env);
 
         if (obj)
         {
@@ -184,15 +188,8 @@ namespace znb_kit
                                const int caller_line,
                                const std::string &caller_function)
     {
-        if (env == nullptr)
-        {
-            throw std::invalid_argument("Variable 'env' is null");
-        }
-
-        if (name.empty())
-        {
-            throw std::invalid_argument("Class name cannot be empty");
-        }
+        VAR_CHECK(env);
+        VAR_CONTENT_CHECK(name);
 
         const auto klass = env->FindClass(name.c_str());
 
@@ -205,14 +202,14 @@ namespace znb_kit
 
         local_refs.insert(klass);
 
-        std::string callsite = "Called from " + get_path(caller_file) + ":" +
+        std::string call_site = "Called from " + get_path(caller_file) + ":" +
                              std::to_string(caller_line) + " in " + caller_function;
 
         local_ref_sources[klass] = {
             __FILE__,
             __LINE__,
             __func__,
-            "Class: " + name + " | " + callsite
+            "Class: " + name + " | " + call_site
         };
 
         return klass;
@@ -221,15 +218,11 @@ namespace znb_kit
     jmethodID wrapper::get_method(JNIEnv *env, const jclass &klass, const std::string &method_name,
                                   const std::string &signature, const bool is_static)
     {
-        if (env == nullptr || klass == nullptr)
-        {
-            throw std::invalid_argument("Variable 'env' or 'klass' is null");
-        }
+        VAR_CHECK(env);
+        VAR_CHECK(klass);
 
-        if (method_name.empty() || signature.empty())
-        {
-            throw std::invalid_argument("Method name or signature cannot be empty");
-        }
+        VAR_CONTENT_CHECK(method_name);
+        VAR_CONTENT_CHECK(signature);
 
         jmethodID method = nullptr;
 
@@ -278,10 +271,7 @@ namespace znb_kit
         }
         else
         {
-            if (instance == nullptr)
-            {
-                throw std::invalid_argument("Variable 'instance' is null");
-            }
+            VAR_CHECK(instance);
 
             result = env->CallObjectMethodA(instance, method_id, parameters.data());
         }
@@ -305,10 +295,7 @@ namespace znb_kit
         }
         else
         {
-            if (instance == nullptr)
-            {
-                throw std::invalid_argument("Variable 'instance' is null");
-            }
+            VAR_CHECK(instance);
 
             result = env->CallByteMethodA(instance, method_id, parameters.data());
         }
@@ -333,10 +320,7 @@ namespace znb_kit
         }
         else
         {
-            if (instance == nullptr)
-            {
-                throw std::invalid_argument("Variable 'instance' is null");
-            }
+            VAR_CHECK(instance);
 
             result = env->CallIntMethodA(instance, method_id, parameters.data());
         }
@@ -360,10 +344,7 @@ namespace znb_kit
         }
         else
         {
-            if (instance == nullptr)
-            {
-                throw std::invalid_argument("Variable 'instance' is null");
-            }
+            VAR_CHECK(instance);
 
             result = env->CallLongMethodA(instance, method_id, parameters.data());
         }
@@ -387,10 +368,7 @@ namespace znb_kit
         }
         else
         {
-            if (instance == nullptr)
-            {
-                throw std::invalid_argument("Variable 'instance' is null");
-            }
+            VAR_CHECK(instance);
 
             result = env->CallShortMethodA(instance, method_id, parameters.data());
         }
@@ -414,10 +392,7 @@ namespace znb_kit
         }
         else
         {
-            if (instance == nullptr)
-            {
-                throw std::invalid_argument("Variable 'instance' is null");
-            }
+            VAR_CHECK(instance);
 
             result = env->CallFloatMethodA(instance, method_id, parameters.data());
         }
@@ -441,10 +416,7 @@ namespace znb_kit
         }
         else
         {
-            if (instance == nullptr)
-            {
-                throw std::invalid_argument("Variable 'instance' is null");
-            }
+            VAR_CHECK(instance);
 
             result = env->CallDoubleMethodA(instance, method_id, parameters.data());
         }
@@ -467,14 +439,50 @@ namespace znb_kit
         }
         else
         {
-            if (instance == nullptr)
-            {
-                throw std::invalid_argument("Variable 'instance' is null");
-            }
+            VAR_CHECK(instance)
 
             env->CallVoidMethodA(instance, method_id, parameters.data());
         }
 
         EXCEPT_CHECK(env);
+    }
+
+    void wrapper::register_natives(JNIEnv *env, const std::string &klass_name, const jclass &klass, const std::vector<native_method> &methods)
+    {
+        VAR_CHECK(env);
+        VAR_CHECK(klass);
+
+        VAR_CONTENT_CHECK(klass_name);
+
+        auto jni_methods = std::vector<JNINativeMethod>(methods.size());
+
+        for (const auto& customer : methods)
+        {
+            const auto method = customer.jni_method;
+
+            VAR_CHECK(method.fnPtr);
+
+            jni_methods.emplace_back(method);
+        }
+
+        env->RegisterNatives(klass, jni_methods.data(), static_cast<jint>(methods.size()));
+
+        EXCEPT_CHECK(env);
+
+        tracked_native_classes[klass_name] = methods.size();
+    }
+
+    void wrapper::unregister_natives(JNIEnv *env, const std::string &klass_name, const jclass &klass)
+    {
+        VAR_CHECK(env);
+        VAR_CHECK(klass);
+
+        VAR_CONTENT_CHECK(klass_name);
+
+        env->UnregisterNatives(klass);
+
+        EXCEPT_CHECK(env);
+
+        tracked_native_classes.erase(klass_name);
     }
 }

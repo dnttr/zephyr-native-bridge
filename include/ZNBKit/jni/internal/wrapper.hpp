@@ -6,14 +6,19 @@
 
 #include <jni.h>
 #include <mutex>
-#include <unordered_set>
-#include <unordered_map>
 #include <string>
-#include "ZNBKit/debug.hpp"
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
-#define VAR_CHECK(env) \
-    if (env == nullptr) { \
-        throw std::invalid_argument("Variable 'env' is null"); \
+#define VAR_CHECK(param) \
+    if (param == nullptr) { \
+        throw std::invalid_argument("Variable '" #param "' is null"); \
+    }
+
+#define VAR_CONTENT_CHECK(param) \
+    if (param.empty()) { \
+        throw std::invalid_argument("Variable '" #param "' is empty"); \
     }
 
 #define EXCEPT_CHECK(env) \
@@ -25,12 +30,35 @@
 
 namespace znb_kit
 {
+
     struct ref_info {
         std::string file;
         int line;
         std::string method;
         std::string details;
     };
+
+    struct native_method
+    {
+        std::vector<char> name_buffer;
+        std::vector<char> signature_buffer;
+
+        JNINativeMethod jni_method{};
+
+        native_method(const std::string &name, const std::string &signature, void *func_ptr)
+        {
+            name_buffer.assign(name.begin(), name.end());
+            name_buffer.push_back('\0');
+
+            signature_buffer.assign(signature.begin(), signature.end());
+            signature_buffer.push_back('\0');
+
+            jni_method.name = name_buffer.data();
+            jni_method.signature = signature_buffer.data();
+            jni_method.fnPtr = func_ptr;
+        }
+    };
+
 
     inline thread_local std::unordered_set<jobject> local_refs;
     inline thread_local std::unordered_map<jobject, ref_info> local_ref_sources;
@@ -53,8 +81,10 @@ namespace znb_kit
 
     class wrapper
     {
+        static std::unordered_map<std::string, size_t> tracked_native_classes;
+
     public:
-        static void check_for_refs();
+        static void check_for_corruption();
 
         static jobject add_local_ref(JNIEnv *env, const jobject &obj,
                            const std::string &file = __FILE__, int line = __LINE__,
@@ -104,5 +134,9 @@ namespace znb_kit
 
         static void invoke_void_method(JNIEnv *env, const jclass &klass, const jobject &instance, const jmethodID &method_id,
                                        const std::vector<jvalue> &parameters);
+
+        static void register_natives(JNIEnv *env, const std::string &klass_name, const jclass &klass, const std::vector<native_method> &methods);
+
+        static void unregister_natives(JNIEnv *env, const std::string &klass_name, const jclass &klass);
     };
 }
