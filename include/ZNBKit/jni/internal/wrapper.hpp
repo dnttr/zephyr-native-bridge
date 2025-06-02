@@ -38,14 +38,14 @@ namespace znb_kit
         std::string details;
     };
 
-    struct native_method
+    struct jni_native_method
     {
         std::vector<char> name_buffer;
         std::vector<char> signature_buffer;
 
         JNINativeMethod jni_method{};
 
-        native_method(const std::string &name, const std::string &signature, void *func_ptr)
+        jni_native_method(const std::string &name, const std::string &signature, void *func_ptr)
         {
             name_buffer.assign(name.begin(), name.end());
             name_buffer.push_back('\0');
@@ -56,6 +56,24 @@ namespace znb_kit
             jni_method.name = name_buffer.data();
             jni_method.signature = signature_buffer.data();
             jni_method.fnPtr = func_ptr;
+        }
+    };
+
+    struct jni_bridge_reference
+    {
+        void *func_ptr;
+        std::vector<std::string> parameters;
+
+        template <typename Func>
+        jni_bridge_reference(Func f, const std::vector<std::string> &params)
+            : func_ptr(reinterpret_cast<void *>(f)),
+              parameters(params)
+        {
+        }
+
+        [[nodiscard]] bool has_func() const
+        {
+            return func_ptr != nullptr;
         }
     };
 
@@ -135,7 +153,7 @@ namespace znb_kit
         static void invoke_void_method(JNIEnv *env, const jclass &klass, const jobject &instance, const jmethodID &method_id,
                                        const std::vector<jvalue> &parameters);
 
-        static void register_natives(JNIEnv *env, const std::string &klass_name, const jclass &klass, const std::vector<native_method> &methods);
+        static void register_natives(JNIEnv *env, const std::string &klass_name, const jclass &klass, const std::vector<jni_native_method> &methods);
 
         static void unregister_natives(JNIEnv *env, const std::string &klass_name, const jclass &klass);
     };

@@ -11,8 +11,6 @@
 #include "ZNBKit/jni/signatures/method/short_method.hpp"
 #include "ZNBKit/jni/signatures/method/void_method.hpp"
 
-#include "ZNBKit/jvmti/jvmti_types.hpp"
-
 #include "ZNBKit/debug.hpp"
 
 /*
@@ -64,7 +62,7 @@ namespace znb_kit
     template std::vector<std::unique_ptr<method_signature<TYPE>>> jvmti_factory::look_for_method_signatures<TYPE>(JNIEnv *, jvmtiEnv *, const klass_signature &);
 
 #define INSTANTIATE_MAP_METHODS(TYPE) \
-    template std::vector<native_method> jvmti_factory::map_methods<TYPE>(const std::unordered_multimap<std::string, reference> &, const std::vector<std::unique_ptr<method_signature<TYPE>>> &);
+    template std::vector<jni_native_method> jvmti_factory::map_methods<TYPE>(const std::unordered_multimap<std::string, jni_bridge_reference> &, const std::vector<std::unique_ptr<method_signature<TYPE>>> &);
 
 #define INSTANTIATE_METHOD_SPEC(JNI_TYPE, SUFFIX) \
     template<> \
@@ -211,10 +209,10 @@ namespace znb_kit
     }
 
     template <typename T>
-    std::vector<native_method> jvmti_factory::map_methods(const std::unordered_multimap<std::string, reference> &map,
+    std::vector<jni_native_method> jvmti_factory::map_methods(const std::unordered_multimap<std::string, jni_bridge_reference> &map,
                                                                          const std::vector<std::unique_ptr<method_signature<T>>> &methods)
     {
-        std::vector<native_method> result_methods;
+        std::vector<jni_native_method> result_methods;
         result_methods.reserve(methods.size());
 
         for (const auto& method_ptr : methods) {

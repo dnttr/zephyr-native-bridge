@@ -12,9 +12,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "ZNBKit/jni/internal/natives.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
-#include "ZNBKit/jvmti/jvmti_types.hpp"
 
 #ifndef ACC_STATIC
 #define ACC_STATIC 0x0008
@@ -55,8 +53,8 @@ namespace znb_kit
             const klass_signature &owner_ks);
 
         template <typename T>
-        static std::vector<native_method> map_methods(
-            const std::unordered_multimap<std::string, reference> &map,
+        static std::vector<jni_native_method> map_methods(
+            const std::unordered_multimap<std::string, jni_bridge_reference> &map,
             const std::vector<std::unique_ptr<method_signature<T>>> &methods);
     };
 }

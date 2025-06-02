@@ -10,12 +10,12 @@
 #include "ZNBKit/debug.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
 
-void znb_kit::jvmti_object::report_lacking_methods(std::unordered_multimap<std::string, reference> map,
-    std::vector<native_method> &filtered)
+void znb_kit::jvmti_object::report_lacking_methods(std::unordered_multimap<std::string, jni_bridge_reference> map,
+    std::vector<jni_native_method> &filtered)
 {
     for (const auto& name : map | std::views::keys)
     {
-        auto it = std::ranges::find_if(filtered, [&name](const native_method& method) {
+        auto it = std::ranges::find_if(filtered, [&name](const jni_native_method& method) {
             return name == method.name_buffer.data();
         });
 

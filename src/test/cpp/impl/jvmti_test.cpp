@@ -38,8 +38,8 @@ TEST_CASE_METHOD(method_proxy_fixture, "JVMTI method mapping", "[jvmti]") {
         }
 
         jvmti_object jvmti(jni_env, jvmti_env);
-        const std::unordered_multimap<std::string, reference> jvm_methods_map = {
-            {"native_method1", reference(&ffi_example_method, {})}};
+        const std::unordered_multimap<std::string, jni_bridge_reference> jvm_methods_map = {
+            {"native_method1", jni_bridge_reference(&ffi_example_method, {})}};
 
 
         auto mapped = jvmti.try_mapping_methods<void>(klass, jvm_methods_map);

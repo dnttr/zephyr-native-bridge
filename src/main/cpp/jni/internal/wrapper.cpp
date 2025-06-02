@@ -90,9 +90,9 @@ namespace znb_kit
             return;
         }
 
-        if (are_natives_empty)
+        if (!are_natives_empty)
         {
-            debug_print_cerr("Warning: Tracked native classes are not empty.");
+            debug_print_cerr("Warning: Tracked native classes are not empty. ");
 
             for (const auto&[name, natives] : tracked_native_classes)
             {
@@ -447,7 +447,7 @@ namespace znb_kit
         EXCEPT_CHECK(env);
     }
 
-    void wrapper::register_natives(JNIEnv *env, const std::string &klass_name, const jclass &klass, const std::vector<native_method> &methods)
+    void wrapper::register_natives(JNIEnv *env, const std::string &klass_name, const jclass &klass, const std::vector<jni_native_method> &methods)
     {
         VAR_CHECK(env);
         VAR_CHECK(klass);
