@@ -20,6 +20,7 @@ namespace znb_kit
         {
             if (object != nullptr && vm != nullptr)
             {
+                //add?
                 wrapper::add_global_ref(vm->get_env(), object);
                 object = nullptr;
             }

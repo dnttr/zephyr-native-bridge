@@ -4,12 +4,12 @@
 
 #pragma once
 
+#include <iostream>
 #include <jni.h>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
-#include <iostream>
 
 #include "ZNBKit/jni/signatures/klass_signature.hpp"
 

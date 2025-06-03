@@ -22,6 +22,7 @@ namespace znb_kit {
         if (needed_new_ref)
         {
             ref = jni->NewLocalRef(obj);
+            EXCEPT_CHECK(jni);
         }
 
         if (ref)
@@ -42,6 +43,7 @@ namespace znb_kit {
             internal::tracker_manager::local_refs.erase(obj);
             internal::tracker_manager::local_ref_sources.erase(obj);
             jni->DeleteLocalRef(obj);
+            EXCEPT_CHECK(jni);
         }
     }
 
@@ -55,6 +57,7 @@ namespace znb_kit {
         if (needed_new_ref)
         {
             ref = jni->NewGlobalRef(obj);
+            EXCEPT_CHECK(jni);
         }
 
         if (ref)
@@ -73,7 +76,49 @@ namespace znb_kit {
         {
             internal::global_tracker::remove(obj);
             jni->DeleteGlobalRef(obj);
+            EXCEPT_CHECK(jni);
         }
+    }
+
+    template <typename T>
+    auto wrapper::change_reference_policy(JNIEnv *jni, const jni_reference_policy new_policy, const T &reference)
+    {
+        VAR_CHECK(jni);
+        VAR_CHECK(reference);
+
+        auto raw_ref = *reference;
+
+        using RawType = std::decay_t<decltype(raw_ref)>;
+
+        const bool is_local = internal::tracker_manager::local_refs.contains(raw_ref);
+        const bool is_global = internal::global_tracker::global_refs.contains(raw_ref);
+
+        if ((!is_local && !is_global) || (is_local && is_global))
+        {
+            throw std::runtime_error("Policy is neither local nor global or it is both. Cannot change it.");
+        }
+
+        if (new_policy == jni_reference_policy::LOCAL && is_local) {
+            return make_local(jni, static_cast<RawType>(raw_ref));
+        }
+
+        if (new_policy == jni_reference_policy::GLOBAL && is_global)
+        {
+            return make_global(jni, static_cast<RawType>(raw_ref));
+        }
+
+        if (new_policy == jni_reference_policy::LOCAL)
+        {
+            auto local_ref = add_local_ref(jni, raw_ref, __FILE__, __LINE__, __func__, true);
+            remove_global_ref(jni, raw_ref);
+
+            return make_local(jni, static_cast<RawType>(local_ref));
+        }
+
+        auto global_ref = add_global_ref(jni, raw_ref, __FILE__, __LINE__, __func__, true);
+        remove_local_ref(jni, raw_ref);
+
+        return make_global(jni, static_cast<RawType>(global_ref));
     }
 
     void wrapper::check_for_corruption()
@@ -358,6 +403,18 @@ namespace znb_kit {
         EXCEPT_CHECK(jni);
     }
 
+    jni_local_ref<jobject> wrapper::new_object(JNIEnv *jni, const jni_local_ref<jclass> &klass,
+                                               const jmethodID &method_id,
+                                               const std::vector<jvalue> &parameters)
+    {
+        VAR_CHECK(jni);
+        VAR_CHECK(klass);
+        VAR_CHECK(method_id);
+
+        jobject obj = jni->NewObjectA(*klass, method_id, )
+        jni->NewObjectA()
+    }
+
     void wrapper::register_natives(JNIEnv *jni, const std::string &klass_name, const jni_global_ref<jclass> &klass, const std::vector<jni_native_method> &methods)
     {
         VAR_CHECK(jni);
@@ -387,7 +444,7 @@ namespace znb_kit {
     {
         VAR_CHECK(jni);
 
-        const jobjectArray array_ref = *array.first;
+        const auto array_ref = *array.first;
 
         VAR_CHECK(array_ref);
 
@@ -397,7 +454,7 @@ namespace znb_kit {
         }
 
         jni_local_ref<jobject> result;
-        const jobject element = jni->GetObjectArrayElement(array_ref, pos);
+        const auto element = jni->GetObjectArrayElement(array_ref, pos);
         EXCEPT_CHECK(jni);
 
         return make_local(jni, element);
@@ -433,4 +490,16 @@ namespace znb_kit {
 
         return str;
     }
+
+    //TODO: Later do it in more generic way
+
+    template auto wrapper::change_reference_policy<jni_local_ref<jobject>>(JNIEnv*, jni_reference_policy, const jni_local_ref<jobject>&);
+    template auto wrapper::change_reference_policy<jni_local_ref<jclass>>(JNIEnv*, jni_reference_policy, const jni_local_ref<jclass>&);
+    template auto wrapper::change_reference_policy<jni_local_ref<jstring>>(JNIEnv*, jni_reference_policy, const jni_local_ref<jstring>&);
+    template auto wrapper::change_reference_policy<jni_local_ref<jobjectArray>>(JNIEnv*, jni_reference_policy, const jni_local_ref<jobjectArray>&);
+
+    template auto wrapper::change_reference_policy<jni_global_ref<jobject>>(JNIEnv*, jni_reference_policy, const jni_global_ref<jobject>&);
+    template auto wrapper::change_reference_policy<jni_global_ref<jclass>>(JNIEnv*, jni_reference_policy, const jni_global_ref<jclass>&);
+    template auto wrapper::change_reference_policy<jni_global_ref<jstring>>(JNIEnv*, jni_reference_policy, const jni_global_ref<jstring>&);
+    template auto wrapper::change_reference_policy<jni_global_ref<jobjectArray>>(JNIEnv*, jni_reference_policy, const jni_global_ref<jobjectArray>&);
 }

@@ -85,6 +85,12 @@ namespace znb_kit
         }
 
     public:
+        enum class jni_reference_policy
+        {
+            LOCAL,
+            GLOBAL
+        };
+
         static jobject add_local_ref(JNIEnv *jni, const jobject &obj, const std::string &file, int line,
                                      const std::string &method, bool needed_new_ref);
         static void remove_local_ref(JNIEnv *jni, const jobject &obj);
@@ -92,6 +98,9 @@ namespace znb_kit
         static jobject add_global_ref(JNIEnv *jni, const jobject &obj, const std::string &file, int line,
                                       const std::string &method, bool needed_new_ref);
         static void remove_global_ref(JNIEnv *jni, const jobject &obj);
+
+        template <class T>
+        auto change_reference_policy(JNIEnv *jni, jni_reference_policy new_policy, const T &reference);
 
         static void check_for_corruption();
 
@@ -149,6 +158,8 @@ namespace znb_kit
         static void invoke_void_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
                                        const jni_local_ref<jobject> &instance, const jmethodID &method_id,
                                        const std::vector<jvalue> &parameters);
+        jni_local_ref<jobject> new_object(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jmethodID &method_id,
+                                          const std::vector<jvalue> &parameters);
 
         static void register_natives(JNIEnv *jni, const std::string &klass_name, const jni_global_ref<jclass> &klass,
                                      const std::vector<jni_native_method> &
