@@ -10,10 +10,6 @@
 
 namespace znb_kit
 {
-    std::string get_string(JNIEnv *env, const jstring &string, bool release = true);
-
-    void delete_references(JNIEnv *env, const std::vector<jobject> &references);
-
     std::vector<std::string> get_parameters(JNIEnv *env, const jobject &method);
 
     bool compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2);

@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "ZNBKit/debug.hpp"
 #include "ZNBKit/jni/internal/wrapper.hpp"
 
 namespace znb_kit
@@ -36,36 +35,6 @@ namespace znb_kit
         wrapper::remove_local_ref(env, array);
 
         return methods;
-    }
-
-    std::string get_string(JNIEnv *env, const jstring &string, const bool release)
-    {
-        const char *key = env->GetStringUTFChars(string, nullptr);
-
-        EXCEPT_CHECK(env);
-
-        if (key == nullptr)
-        {
-            debug_print("get_string() is unable to get UTF string");
-            return {};
-        }
-
-        std::string str(key);
-
-        if (release)
-        {
-            env->ReleaseStringUTFChars(string, key);
-        }
-
-        return str;
-    }
-
-    void delete_references(JNIEnv *env, const std::vector<jobject> &references)
-    {
-        for (const auto &reference : references)
-        {
-            wrapper::remove_local_ref(env, reference);
-        }
     }
 
     std::vector<std::string> get_parameters(JNIEnv *env, const jobject &instance)

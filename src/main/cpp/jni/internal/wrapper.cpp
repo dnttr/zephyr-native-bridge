@@ -8,124 +8,7 @@
 
 #include "ZNBKit/debug.hpp"
 
-namespace znb_kit
-{
-    std::mutex global_tracker::mutex;
-    std::unordered_set<jobject> global_tracker::global_refs;
-    std::unordered_map<jobject, ref_info> global_tracker::global_ref_sources;
-
-    std::unordered_map<std::string, size_t> wrapper::tracked_native_classes;
-
-    void global_tracker::add(const jobject &ref, const std::string &file, int line, const std::string &method)
-    {
-        std::lock_guard lock(mutex);
-
-        if (ref != nullptr)
-        {
-            global_refs.insert(ref);
-            global_ref_sources[ref] = {file, line, method};
-        }
-    }
-
-    void global_tracker::remove(const jobject &ref)
-    {
-        std::lock_guard lock(mutex);
-        global_refs.erase(ref);
-        global_ref_sources.erase(ref);
-    }
-
-    size_t global_tracker::count()
-    {
-        std::lock_guard lock(mutex);
-        return global_refs.size();
-    }
-
-    void global_tracker::dump_refs()
-    {
-        std::lock_guard lock(mutex);
-        debug_print_cerr("Dumping " + std::to_string(global_refs.size()) + " global references:");
-
-        for (const auto& ref : global_refs)
-        {
-            if (auto it = global_ref_sources.find(ref); it != global_ref_sources.end())
-            {
-                const auto& info = it->second;
-                debug_print_cerr("Global ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                                " created at " + info.file + ":" + std::to_string(info.line) +
-                                " in " + info.method);
-            }
-            else
-            {
-                debug_print_cerr("Global ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                                " (source unknown)");
-            }
-        }
-    }
-
-    void wrapper::check_for_corruption()
-    {
-        const bool is_global_empty = global_tracker::count() == 0;
-        const bool is_local_empty = local_refs.empty();
-        const bool are_natives_empty = tracked_native_classes.empty();
-
-        if (!is_global_empty || !is_local_empty)
-        {
-            debug_print_cerr("Warning: References are not empty.");
-
-            debug_print_cerr("Global references count: " + std::to_string(global_tracker::count()));
-            debug_print_cerr("Local references count: " + std::to_string(local_refs.size()));
-
-            if (!is_global_empty)
-            {
-                debug_print_cerr("Global references are not empty, potential memory leak detected.");
-                global_tracker::dump_refs();
-            }
-
-            if (!is_local_empty)
-            {
-                debug_print_cerr("Local references are not empty, potential memory leak detected.");
-                dump_local_refs();
-            }
-
-            return;
-        }
-
-        if (!are_natives_empty)
-        {
-            debug_print_cerr("Warning: Tracked native classes are not empty. ");
-
-            for (const auto&[name, natives] : tracked_native_classes)
-            {
-                debug_print_cerr("Class " + name + " has " + std::to_string(natives) + " references which were not deleted.");
-            }
-
-            return;
-        }
-
-        debug_print_cerr("No references left. All good i think, unless not using wrapper, then well, you are on your own. :>");
-    }
-
-    void wrapper::dump_local_refs()
-    {
-        debug_print_cerr("Dumping " + std::to_string(local_refs.size()) + " local references:");
-        for (const auto& ref : local_refs)
-        {
-            auto it = local_ref_sources.find(ref);
-            if (it != local_ref_sources.end())
-            {
-                const auto& info = it->second;
-                debug_print_cerr("Local ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                               " created at " + info.file + ":" + std::to_string(info.line) +
-                               " in " + info.method +
-                               (info.details.empty() ? "" : " (" + info.details + ")"));
-            }
-            else
-            {
-                debug_print_cerr("Local ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                               " (source unknown)");
-            }
-        }
-    }
+namespace znb_kit {
 
     jobject wrapper::add_local_ref(JNIEnv *jni, const jobject &obj,
                                   const std::string &file, int line,
@@ -137,8 +20,8 @@ namespace znb_kit
 
         if (ref)
         {
-            local_refs.insert(ref);
-            local_ref_sources[ref] = {file, line, method};
+            internal::tracker_manager::local_refs.insert(ref);
+            internal::tracker_manager::local_ref_sources[ref] = {file, line, method};
         }
 
         return ref;
@@ -150,8 +33,8 @@ namespace znb_kit
 
         if (obj)
         {
-            local_refs.erase(obj);
-            local_ref_sources.erase(obj);
+            internal::tracker_manager::local_refs.erase(obj);
+            internal::tracker_manager::local_ref_sources.erase(obj);
             jni->DeleteLocalRef(obj);
         }
     }
@@ -166,7 +49,7 @@ namespace znb_kit
 
         if (ref)
         {
-            global_tracker::add(ref, file, line, method);
+            internal::global_tracker::add(ref, file, line, method);
         }
 
         return ref;
@@ -178,15 +61,20 @@ namespace znb_kit
 
         if (obj)
         {
-            global_tracker::remove(obj);
+            internal::global_tracker::remove(obj);
             jni->DeleteGlobalRef(obj);
         }
     }
 
-    jclass wrapper::search_for_class(JNIEnv *jni, const std::string &name,
-                               const std::string &caller_file,
-                               const int caller_line,
-                               const std::string &caller_function)
+    void wrapper::check_for_corruption()
+    {
+        internal::tracker_manager::check_for_corruption();
+    }
+
+    jni_local_ref<jclass> wrapper::search_for_class(JNIEnv *jni, const std::string &name,
+                                     const std::string &caller_file,
+                                     const int caller_line,
+                                     const std::string &caller_function)
     {
         VAR_CHECK(jni);
         VAR_CONTENT_CHECK(name);
@@ -200,12 +88,12 @@ namespace znb_kit
             throw std::runtime_error("Cannot find class '" + name + "'");
         }
 
-        local_refs.insert(klass);
+        internal::tracker_manager::local_refs.insert(klass);
 
-        std::string call_site = "Called from " + get_path(caller_file) + ":" +
+        const std::string call_site = "Called from " + get_path(caller_file) + ":" +
                              std::to_string(caller_line) + " in " + caller_function;
 
-        local_ref_sources[klass] = {
+        internal::tracker_manager::local_ref_sources[klass] = {
             __FILE__,
             __LINE__,
             __func__,
@@ -469,7 +357,7 @@ namespace znb_kit
 
         EXCEPT_CHECK(jni);
 
-        tracked_native_classes[klass_name] = methods.size();
+        internal::tracker_manager::tracked_native_classes[klass_name] = methods.size();
     }
 
     void wrapper::unregister_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass)
@@ -483,15 +371,22 @@ namespace znb_kit
 
         EXCEPT_CHECK(jni);
 
-        tracked_native_classes.erase(klass_name);
+        internal::tracker_manager::tracked_native_classes.erase(klass_name);
     }
 
-    //TODO: Implement obtain_klass_name, otherwise it will return empty string and therefore crash. Needed for tracking
-    std::string wrapper::obtain_klass_name(JNIEnv *jni, const jclass &klass)
+    std::string wrapper::get_string(JNIEnv *env, const jstring &string)
     {
-        VAR_CHECK(jni);
-        VAR_CHECK(klass);
+        VAR_CHECK(env);
+        VAR_CHECK(string);
 
-        return "";
+        const char *key = env->GetStringUTFChars(string, nullptr);
+        EXCEPT_CHECK(env);
+
+        std::string str(key);
+
+        env->ReleaseStringUTFChars(string, key);
+        EXCEPT_CHECK(env);
+
+        return str;
     }
 }

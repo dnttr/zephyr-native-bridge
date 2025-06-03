@@ -5,38 +5,19 @@
 #pragma once
 
 #include <jni.h>
-#include <mutex>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
-#define VAR_CHECK(param) \
-    if (param == nullptr) { \
-        throw std::invalid_argument("Variable '" #param "' is null"); \
-    }
-
-#define VAR_CONTENT_CHECK(param) \
-    if (param.empty()) { \
-        throw std::invalid_argument("Variable '" #param "' is empty"); \
-    }
-
-#define EXCEPT_CHECK(jni) \
-    if (jni->ExceptionCheck()) { \
-        jni->ExceptionDescribe(); \
-        jni->ExceptionClear(); \
-        throw std::runtime_error("JNI Exception occurred"); \
-}
+#include "ZNBKit/jni/internal/internal.hpp"
 
 namespace znb_kit
 {
+    template<typename T>
+    using jni_local_ref = std::unique_ptr<T, internal::jni_deleter<T, internal::jni_local_policy>>;
 
-    struct ref_info {
-        std::string file;
-        int line;
-        std::string method;
-        std::string details;
-    };
+    template<typename T>
+    using jni_global_ref = std::unique_ptr<T, internal::jni_deleter<T, internal::jni_global_policy>>;
 
     struct jni_native_method
     {
@@ -77,48 +58,32 @@ namespace znb_kit
         }
     };
 
-
-    inline thread_local std::unordered_set<jobject> local_refs;
-    inline thread_local std::unordered_map<jobject, ref_info> local_ref_sources;
-
-    class global_tracker
-    {
-        static std::mutex mutex;
-        static std::unordered_set<jobject> global_refs;
-        static std::unordered_map<jobject, ref_info> global_ref_sources;
-
-    public:
-        static void add(const jobject &ref, const std::string &file = "", int line = 0, const std::string &method = "");
-
-        static void remove(const jobject &ref);
-
-        static size_t count();
-
-        static void dump_refs();
-    };
-
     class wrapper
     {
-        static std::unordered_map<std::string, size_t> tracked_native_classes;
+        /*static constexpr std::string_view java_lang_Class = "java/lang/Class";
+        static constexpr std::string_view java_lang_reflect_Method = "java/lang/reflect/Method";
+
+        static constexpr std::string_view getParameterTypes_name = "getParameterTypes";
+        static constexpr std::string_view getParameterTypes_signature = "()[Ljava/lang/Class;";
+
+        static constexpr std::string_view getDeclaredMethods_name = "getDeclaredMethods";
+        static constexpr std::string_view getDeclaredMethods_signature = "()[Ljava/lang/reflect/Method;";
+
+        static constexpr std::string_view getTypeName_name = "getTypeName";
+        static constexpr std::string_view getTypeName_signature = "()Ljava/lang/String;";*/
 
     public:
-        static void check_for_corruption();
-
-        static jobject add_local_ref(JNIEnv *jni, const jobject &obj,
-                           const std::string &file = __FILE__, int line = __LINE__,
-                           const std::string &method = __builtin_FUNCTION());
-
-        static jobject add_global_ref(JNIEnv *jni, const jobject &obj,
-                                    const std::string &file = __FILE__, int line = __LINE__,
-                                    const std::string &method = __builtin_FUNCTION());
-
+        static jobject add_local_ref(JNIEnv *jni, const jobject &obj, const std::string &file, int line,
+                              const std::string &method);
         static void remove_local_ref(JNIEnv *jni, const jobject &obj);
 
+        static jobject add_global_ref(JNIEnv *jni, const jobject &obj, const std::string &file, int line,
+                               const std::string &method);
         static void remove_global_ref(JNIEnv *jni, const jobject &obj);
 
-        static void dump_local_refs();
+        static void check_for_corruption();
 
-        static jclass search_for_class(JNIEnv *jni, const std::string &name,
+        static jni_local_ref<jclass> search_for_class(JNIEnv *jni, const std::string &name,
                                      const std::string &caller_file = __builtin_FILE(),
                                      int caller_line = __builtin_LINE(),
                                      const std::string &caller_function = __builtin_FUNCTION());
@@ -129,7 +94,7 @@ namespace znb_kit
         static jmethodID get_method(JNIEnv *jni, const std::string &name, const std::string &method,
                                     const std::string &signature, bool is_static);
 
-        static jobject invoke_object_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
+        static jni_local_ref<jobject> invoke_object_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
                                             const jmethodID &method_id, const std::vector<jvalue> &parameters);
 
         static jbyte invoke_byte_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
@@ -157,6 +122,6 @@ namespace znb_kit
 
         static void unregister_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass);
 
-        static std::string obtain_klass_name(JNIEnv *jni, const jclass &klass);
+        static std::string get_string(JNIEnv *env, const jstring &string);
     };
 }
