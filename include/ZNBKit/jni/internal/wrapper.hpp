@@ -11,14 +11,14 @@
 
 #include "ZNBKit/jni/internal/internal.hpp"
 
+template<typename T>
+using jni_local_ref = std::unique_ptr<T, internal::jni_deleter<T, internal::jni_local_policy>>;
+
+template<typename T>
+using jni_global_ref = std::unique_ptr<T, internal::jni_deleter<T, internal::jni_global_policy>>;
+
 namespace znb_kit
 {
-    template<typename T>
-    using jni_local_ref = std::unique_ptr<T, internal::jni_deleter<T, internal::jni_local_policy>>;
-
-    template<typename T>
-    using jni_global_ref = std::unique_ptr<T, internal::jni_deleter<T, internal::jni_global_policy>>;
-
     struct jni_native_method
     {
         std::vector<char> name_buffer;
@@ -72,6 +72,16 @@ namespace znb_kit
         static constexpr std::string_view getTypeName_name = "getTypeName";
         static constexpr std::string_view getTypeName_signature = "()Ljava/lang/String;";*/
 
+        template <typename T>
+        static jni_local_ref<T> make_local(JNIEnv *env, T ref) {
+            return jni_local_ref<T>(ref, {env});
+        }
+
+        template <typename T>
+        static jni_global_ref<T> make_global(JNIEnv *env, T ref) {
+            return jni_global_ref<T>(ref, {env});
+        }
+
     public:
         static jobject add_local_ref(JNIEnv *jni, const jobject &obj, const std::string &file, int line,
                               const std::string &method);
@@ -88,14 +98,14 @@ namespace znb_kit
                                      int caller_line = __builtin_LINE(),
                                      const std::string &caller_function = __builtin_FUNCTION());
 
-        static jmethodID get_method(JNIEnv *jni, const jclass &klass, const std::string &method_name,
+        static jmethodID get_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const std::string &method_name,
                                     const std::string &signature, bool is_static);
 
         static jmethodID get_method(JNIEnv *jni, const std::string &name, const std::string &method,
                                     const std::string &signature, bool is_static);
 
-        static jni_local_ref<jobject> invoke_object_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
-                                            const jmethodID &method_id, const std::vector<jvalue> &parameters);
+        static jni_local_ref<jobject> invoke_object_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
+                                                           const jmethodID &method_id, const std::vector<jvalue> &parameters);
 
         static jbyte invoke_byte_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
                                         const jmethodID &method_id, const std::vector<jvalue> &parameters);
@@ -118,9 +128,10 @@ namespace znb_kit
         static void invoke_void_method(JNIEnv *jni, const jclass &klass, const jobject &instance, const jmethodID &method_id,
                                        const std::vector<jvalue> &parameters);
 
-        static void register_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass, const std::vector<jni_native_method> &methods);
+        static void register_natives(JNIEnv *jni, const std::string &klass_name, const jni_global_ref<jclass> &klass, const std::vector<jni_native_method> &
+                                     methods);
 
-        static void unregister_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass);
+        static void unregister_natives(JNIEnv *jni, const std::string &klass_name, const jni_global_ref<jclass> &klass);
 
         static std::string get_string(JNIEnv *env, const jstring &string);
     };

@@ -8,6 +8,7 @@
 
 #include "ZNBKit/debug.hpp"
 
+
 namespace znb_kit {
 
     jobject wrapper::add_local_ref(JNIEnv *jni, const jobject &obj,
@@ -100,10 +101,10 @@ namespace znb_kit {
             "Class: " + name + " | " + call_site
         };
 
-        return klass;
+        return make_local(jni, klass);
     }
 
-    jmethodID wrapper::get_method(JNIEnv *jni, const jclass &klass, const std::string &method_name,
+    jmethodID wrapper::get_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const std::string &method_name,
                                   const std::string &signature, const bool is_static)
     {
         VAR_CHECK(jni);
@@ -116,11 +117,11 @@ namespace znb_kit {
 
         if (is_static)
         {
-            method = jni->GetStaticMethodID(klass, method_name.c_str(), signature.c_str());
+            method = jni->GetStaticMethodID(*klass, method_name.c_str(), signature.c_str());
         }
         else
         {
-            method = jni->GetMethodID(klass, method_name.c_str(), signature.c_str());
+            method = jni->GetMethodID(*klass, method_name.c_str(), signature.c_str());
         }
 
         EXCEPT_CHECK(jni);
@@ -140,12 +141,12 @@ namespace znb_kit {
     {
         const auto klass = search_for_class(jni, name);
         const auto method_id = get_method(jni, klass, method, signature, is_static);
-        remove_local_ref(jni, klass);
+//        remove_local_ref(jni, klass); no longer needed?
 
         return method_id;
     }
 
-    jobject wrapper::invoke_object_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
+    jni_local_ref<jobject> wrapper::invoke_object_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
                                          const jmethodID &method_id, const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(jni);
@@ -155,18 +156,20 @@ namespace znb_kit {
 
         if (is_static)
         {
-            result = jni->CallStaticObjectMethodA(klass, method_id, parameters.data());
+            result = jni->CallStaticObjectMethodA(*klass, method_id, parameters.data());
         }
         else
         {
             VAR_CHECK(instance);
 
-            result = jni->CallObjectMethodA(instance, method_id, parameters.data());
+            result = jni->CallObjectMethodA(*instance, method_id, parameters.data());
         }
 
         EXCEPT_CHECK(jni);
 
-        return add_local_ref(jni, result, __FILE__, __LINE__, __func__);
+        const auto ref = add_local_ref(jni, result, __FILE__, __LINE__, __func__);
+
+        return make_local(jni, ref);
     }
 
     jbyte wrapper::invoke_byte_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
@@ -335,7 +338,7 @@ namespace znb_kit {
         EXCEPT_CHECK(jni);
     }
 
-    void wrapper::register_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass, const std::vector<jni_native_method> &methods)
+    void wrapper::register_natives(JNIEnv *jni, const std::string &klass_name, const jni_global_ref<jclass> &klass, const std::vector<jni_native_method> &methods)
     {
         VAR_CHECK(jni);
         VAR_CHECK(klass);
@@ -353,21 +356,21 @@ namespace znb_kit {
             jni_methods.emplace_back(method);
         }
 
-        jni->RegisterNatives(klass, jni_methods.data(), static_cast<jint>(methods.size()));
+        jni->RegisterNatives(*klass, jni_methods.data(), static_cast<jint>(methods.size()));
 
         EXCEPT_CHECK(jni);
 
         internal::tracker_manager::tracked_native_classes[klass_name] = methods.size();
     }
 
-    void wrapper::unregister_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass)
+    void wrapper::unregister_natives(JNIEnv *jni, const std::string &klass_name, const jni_global_ref<jclass> &klass)
     {
         VAR_CHECK(jni);
         VAR_CHECK(klass);
 
         VAR_CONTENT_CHECK(klass_name);
 
-        jni->UnregisterNatives(klass);
+        jni->UnregisterNatives(*klass);
 
         EXCEPT_CHECK(jni);
 
