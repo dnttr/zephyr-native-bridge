@@ -78,7 +78,7 @@ namespace internal
     };
 
     template <typename T, typename policy>
-    struct jni_deleter
+    struct jni_reference_deleter
     {
         JNIEnv *jni;
 
@@ -87,6 +87,17 @@ namespace internal
             if (ref)
             {
                 policy{}(jni, ref);
+            }
+        }
+    };
+
+    struct jni_string_deleter {
+        JNIEnv* env;
+        jstring str;
+
+        void operator()(const char* ptr) const {
+            if (ptr) {
+                env->ReleaseStringUTFChars(str, ptr);
             }
         }
     };

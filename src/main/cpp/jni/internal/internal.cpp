@@ -114,7 +114,7 @@ namespace internal
                 const auto&[file, line, method, details] = it->second;
                 debug_print_cerr("Local ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
                                " created at " + file + ":" + std::to_string(line) +
-                               " in " + std::string::append(method) +
+                               " in " + method +
                                (details.empty() ? "" : " (" + details + ")"));
             }
             else

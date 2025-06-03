@@ -12,6 +12,7 @@
 #include "ZNBKit/jni/signatures/method/void_method.hpp"
 
 #include "ZNBKit/debug.hpp"
+#include "ZNBKit/jni/utils/util.hpp"
 
 /*
  * For now include all JNI types here. It probably isn't good idea to include all of them until they're all implemented but who cares.
