@@ -152,7 +152,6 @@ namespace internal
     struct jni_reference_value_deleter
     {
         JNIEnv *jni;
-        types type;
 
         void operator()(const jvalue &ref) const
         {

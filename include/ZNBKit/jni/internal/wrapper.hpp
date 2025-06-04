@@ -17,6 +17,9 @@ using jni_local_ref = std::unique_ptr<T, internal::jni_reference_deleter<T, inte
 template <typename T>
 using jni_global_ref = std::unique_ptr<T, internal::jni_reference_deleter<T, internal::jni_global_policy>>;
 
+using jni_local_value_ref = std::unique_ptr<jvalue, internal::jni_reference_value_deleter<internal::jni_local_policy>>;
+using jni_global_value_ref = std::unique_ptr<jvalue, internal::jni_reference_value_deleter<internal::jni_global_policy>>;
+
 namespace znb_kit
 {
     struct jni_native_method
@@ -118,48 +121,49 @@ namespace znb_kit
         static jni_local_ref<jobject> invoke_object_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
                                                            const jni_local_ref<jobject> &instance,
                                                            const jmethodID &method_id,
-                                                           const std::vector<jvalue> &parameters);
+                                                           const std::vector<jni_local_value_ref> &parameters);
 
         static std::pair<jni_local_ref<jobjectArray>, size_t> invoke_object_array_method(
             JNIEnv *jni, const jni_local_ref<jclass> &klass,
             const jni_local_ref<jobject> &instance,
             const jmethodID &method_id,
-            const std::vector<jvalue> &parameters);
+            const std::vector<jni_local_value_ref> &parameters);
 
         static jni_local_ref<jstring> invoke_string_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
                                                            const jni_local_ref<jobject> &instance,
                                                            const jmethodID &method_id,
-                                                           const std::vector<jvalue> &parameters);
+                                                           const std::vector<jni_local_value_ref> &parameters);
 
         static jbyte invoke_byte_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
                                         const jni_local_ref<jobject> &instance,
-                                        const jmethodID &method_id, const std::vector<jvalue> &parameters);
+                                        const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters);
 
         static jint invoke_int_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
                                       const jni_local_ref<jobject> &instance,
-                                      const jmethodID &method_id, const std::vector<jvalue> &parameters);
+                                      const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters);
 
         static jlong invoke_long_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
                                         const jni_local_ref<jobject> &instance,
-                                        const jmethodID &method_id, const std::vector<jvalue> &parameters);
+                                        const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters);
 
         static jshort invoke_short_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
                                           const jni_local_ref<jobject> &instance,
-                                          const jmethodID &method_id, const std::vector<jvalue> &parameters);
+                                          const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters);
 
         static jfloat invoke_float_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
                                           const jni_local_ref<jobject> &instance,
-                                          const jmethodID &method_id, const std::vector<jvalue> &parameters);
+                                          const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters);
 
         static jdouble invoke_double_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
                                             const jni_local_ref<jobject> &instance, const jmethodID &method_id,
-                                            const std::vector<jvalue> &parameters);
+                                            const std::vector<jni_local_value_ref> &parameters);
 
         static void invoke_void_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
                                        const jni_local_ref<jobject> &instance, const jmethodID &method_id,
-                                       const std::vector<jvalue> &parameters);
-        jni_local_ref<jobject> new_object(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jmethodID &method_id,
-                                          const std::vector<jvalue> &parameters);
+                                       const std::vector<jni_local_value_ref> &parameters);
+        
+        static jni_local_ref<jobject> new_object(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jmethodID &method_id,
+                                                 const std::vector<jni_local_value_ref> &parameters);
 
         static void register_natives(JNIEnv *jni, const std::string &klass_name, const jni_global_ref<jclass> &klass,
                                      const std::vector<jni_native_method> &
