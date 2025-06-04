@@ -74,13 +74,6 @@ namespace internal
             return types::OBJECT;
     }
 
-    enum class jni_policy
-    {
-        LOCAL,
-        GLOBAL,
-        UNKNOWN
-    };
-
     struct ref_info {
         std::string file;
         int line;
@@ -155,6 +148,21 @@ namespace internal
         }
     };
 
+    template <typename policy>
+    struct jni_reference_value_deleter
+    {
+        JNIEnv *jni;
+        types type;
+
+        void operator()(const jvalue &ref) const
+        {
+            if (ref.l)
+            {
+                policy{}(jni, ref.l);
+            }
+        }
+    };
+
     template <typename T, typename policy>
     struct jni_reference_deleter
     {
@@ -165,30 +173,6 @@ namespace internal
             if (ref)
             {
                 policy{}(jni, ref);
-            }
-        }
-    };
-
-    template <typename T>
-    class jni_value
-    {
-        const T value;
-
-        jni_policy policy;
-        types type;
-
-        explicit jni_value(const jvalue value, const jni_policy policy) : value(value), policy(policy)
-        {
-
-            auto types = get_type<T>();
-            type = types;
-
-            if (types != types::OBJECT)
-            {
-                if (policy != jni_policy::UNKNOWN)
-                {
-                    throw std::invalid_argument("Invalid combination. Type is not an object");
-                }
             }
         }
     };
