@@ -14,36 +14,27 @@ namespace znb_kit
     class klass_signature
     {
         JNIEnv *jni;
-        jni_global_ref<jclass> owner;
+        global_reference<jclass> owner;
 
         const std::string klass_name;
     public:
         klass_signature(JNIEnv *jni, const std::string &klass_name): jni(jni), klass_name(klass_name)
         {
             const auto klass = wrapper::search_for_class(jni, klass_name);
-            this->owner = wrapper::change_reference_policy<jni_local_ref<jclass>>(jni, wrapper::jni_reference_policy::GLOBAL, klass);
+            this->owner = wrapper::change_reference_policy<local_reference<jclass>>(jni, wrapper::jni_reference_policy::GLOBAL, klass);
         }
 
-        klass_signature(JNIEnv *jni, const jni_local_ref<jclass> &owner)
+        klass_signature(JNIEnv *jni, const local_reference<jclass> &owner_ref)
         {
             VAR_CHECK(jni);
-            VAR_CHECK(owner);
 
             this->jni = jni;
-            this->owner = wrapper::change_reference_policy<jni_local_ref<jclass>>(jni, wrapper::jni_reference_policy::GLOBAL, owner);
+            this->owner = wrapper::change_reference_policy<local_reference<jclass>>(jni, wrapper::jni_reference_policy::GLOBAL, owner_ref);
         }
 
-        ~klass_signature()
+        [[nodiscard]] const auto &get_owner() const
         {
-            if (owner != nullptr && jni != nullptr)
-            {
-                owner = nullptr;
-            }
-        }
-
-        [[nodiscard]] jclass get_owner() const
-        {
-            return *owner;
+            return owner;
         }
 
         [[nodiscard]] const std::string &get_klass_name() const

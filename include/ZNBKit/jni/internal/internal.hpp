@@ -27,15 +27,6 @@
         throw std::runtime_error("JNI Exception occurred"); \
     }
 
-template<typename>
-struct is_unique_ptr : std::false_type {};
-
-template<typename U, typename D>
-struct is_unique_ptr<std::unique_ptr<U, D>> : std::true_type {};
-
-template<typename T>
-constexpr bool is_unique_ptr_v = is_unique_ptr<T>::value;
-
 namespace internal
 {
     enum class types
@@ -51,28 +42,6 @@ namespace internal
 
         OBJECT
     };
-
-    template <typename T>
-    constexpr types get_type() {
-        if constexpr (std::is_same_v<T, jboolean>)
-            return types::BOOLEAN;
-        else if constexpr (std::is_same_v<T, jbyte>)
-            return types::BYTE;
-        else if constexpr (std::is_same_v<T, jchar>)
-            return types::CHAR;
-        else if constexpr (std::is_same_v<T, jshort>)
-            return types::SHORT;
-        else if constexpr (std::is_same_v<T, jint>)
-            return types::INT;
-        else if constexpr (std::is_same_v<T, jlong>)
-            return types::LONG;
-        else if constexpr (std::is_same_v<T, jfloat>)
-            return types::FLOAT;
-        else if constexpr (std::is_same_v<T, jdouble>)
-            return types::DOUBLE;
-        else
-            return types::OBJECT;
-    }
 
     struct ref_info {
         std::string file;
@@ -121,70 +90,5 @@ namespace internal
         static size_t count();
 
         static void dump_refs();
-    };
-
-    struct jni_local_policy
-    {
-        void operator()(JNIEnv *jni, const jobject &ref) const {
-            if (ref)
-            {
-                tracker_manager::local_refs.erase(ref);
-                tracker_manager::local_ref_sources.erase(ref);
-
-                jni->DeleteLocalRef(ref);
-            }
-        }
-    };
-
-    struct jni_global_policy
-    {
-        void operator()(JNIEnv *jni, const jobject &ref) const {
-            if (ref)
-            {
-                global_tracker::remove(ref);
-
-                jni->DeleteGlobalRef(ref);
-            }
-        }
-    };
-
-    template <typename policy>
-    struct jni_reference_value_deleter
-    {
-        JNIEnv *jni;
-
-        void operator()(const jvalue &ref) const
-        {
-            if (ref.l)
-            {
-                policy{}(jni, ref.l);
-            }
-        }
-    };
-
-    template <typename T, typename policy>
-    struct jni_reference_deleter
-    {
-        JNIEnv *jni;
-
-        void operator()(T ref)
-        {
-            if (ref)
-            {
-                policy{}(jni, ref);
-            }
-        }
-    };
-
-    struct jni_string_deleter
-    {
-        JNIEnv* env;
-        jstring str;
-
-        void operator()(const char* ptr) const {
-            if (ptr) {
-                env->ReleaseStringUTFChars(str, ptr);
-            }
-        }
     };
 }

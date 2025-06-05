@@ -35,17 +35,17 @@ namespace znb_kit
                 throw std::invalid_argument("vm cannot be null");
             }
 
-            JNIEnv* env = vm->get_env();
+            JNIEnv* jni = vm->get_env();
 
-            const auto obj = env->NewObjectA(method_signature.get_owner(), method_signature.get_identity(), parameters.data());
+            const auto obj = wrapper::new_object(jni, method_signature.get_owner()->get_owner(), method_signature.get_identity(), parameters.data());
 
             if (obj == nullptr) {
-                env->ExceptionClear();
+                jni->ExceptionClear();
                 throw std::runtime_error("Unable to create new instance");
             }
 
-            object = wrapper::add_global_ref(env, obj);
-            wrapper::remove_local_ref(env, obj);
+            object = wrapper::add_global_ref(jni, obj);
+            wrapper::remove_local_ref(jni, obj);
         }
 
         instance(const instance &other) = delete;

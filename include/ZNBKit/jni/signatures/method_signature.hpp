@@ -33,7 +33,7 @@ namespace znb_kit
                 throw std::runtime_error("method_signature::build_identity: owner or jni is null for method '" + name + "' with signature '" + signature + "'");
             }
 
-            const auto klass = owner->get_owner();
+            const auto klass = owner;
 
             if (klass == nullptr)
             {
@@ -96,9 +96,9 @@ namespace znb_kit
 
         virtual T invoke(const jobject &instance, std::vector<jvalue> &parameters) = 0;
 
-        [[nodiscard]] jclass get_owner() const
+        [[nodiscard]] auto get_owner() const
         {
-            return owner->get_owner();
+            return owner.get();
         }
 
         [[nodiscard]] jmethodID get_identity() const

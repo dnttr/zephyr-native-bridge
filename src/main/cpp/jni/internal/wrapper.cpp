@@ -12,7 +12,7 @@
 
 namespace znb_kit {
 
-    std::vector<jvalue> transform_parameters(const std::vector<jni_local_value_ref> &parameters)
+    std::vector<jvalue> transform_parameters(const std::vector<local_value_reference> &parameters)
     {
         std::vector<jvalue> result;
 
@@ -138,7 +138,7 @@ namespace znb_kit {
         internal::tracker_manager::check_for_corruption();
     }
 
-    jni_local_ref<jclass> wrapper::search_for_class(JNIEnv *jni, const std::string &name,
+    local_reference<jclass> wrapper::search_for_class(JNIEnv *jni, const std::string &name,
                                                     const std::string &caller_file,
                                                     const int caller_line,
                                                     const std::string &caller_function)
@@ -170,11 +170,14 @@ namespace znb_kit {
         return make_local(jni, klass);
     }
 
-    jmethodID wrapper::get_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const std::string &method_name,
+    template <typename RefType>
+    jmethodID wrapper::get_method(JNIEnv *jni, const RefType &klass, const std::string &method_name,
                                   const std::string &signature, const bool is_static)
     {
         VAR_CHECK(jni);
-        VAR_CHECK(klass);
+
+        const auto klass_object = *klass;
+        VAR_CHECK(klass_object);
 
         VAR_CONTENT_CHECK(method_name);
         VAR_CONTENT_CHECK(signature);
@@ -183,11 +186,11 @@ namespace znb_kit {
 
         if (is_static)
         {
-            method = jni->GetStaticMethodID(*klass, method_name.c_str(), signature.c_str());
+            method = jni->GetStaticMethodID(klass_object, method_name.c_str(), signature.c_str());
         }
         else
         {
-            method = jni->GetMethodID(*klass, method_name.c_str(), signature.c_str());
+            method = jni->GetMethodID(klass_object, method_name.c_str(), signature.c_str());
         }
 
         EXCEPT_CHECK(jni);
@@ -211,23 +214,25 @@ namespace znb_kit {
         return method_id;
     }
 
-    jni_local_ref<jobject> wrapper::invoke_object_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
-                                                         const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters)
+    local_reference<jobject> wrapper::invoke_object_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+                                                         const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jobject result;
 
         const auto raw_parameters = transform_parameters(parameters).data();
+        const auto klass_object = *klass;
 
-        if (IS_STATIC(klass))
+        if (IS_STATIC(klass_object))
         {
-            result = jni->CallStaticObjectMethodA(*klass, method_id, raw_parameters);
+            result = jni->CallStaticObjectMethodA(klass_object, method_id, raw_parameters);
         }
         else
         {
-            VAR_CHECK(instance);
+            const auto instance_object = *instance;
+            VAR_CHECK(instance_object);
 
-            result = jni->CallObjectMethodA(*instance, method_id, raw_parameters);
+            result = jni->CallObjectMethodA(instance_object, method_id, raw_parameters);
         }
 
         EXCEPT_CHECK(jni);
@@ -237,12 +242,12 @@ namespace znb_kit {
         return make_local(jni, ref);
     }
 
-    std::pair<jni_local_ref<jobjectArray>, size_t> wrapper::invoke_object_array_method(
-        JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
-        const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters)
+    std::pair<local_reference<jobjectArray>, size_t> wrapper::invoke_object_array_method(
+        JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+        const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         auto obj_ref = invoke_object_method(jni, klass, instance, method_id, parameters);
-        VAR_CHECK(obj_ref);
+        VAR_CHECK(*obj_ref);
         const auto raw_obj = obj_ref.release();
 
         const auto array_ref = reinterpret_cast<jobjectArray>(raw_obj);
@@ -251,11 +256,11 @@ namespace znb_kit {
         return std::make_pair(make_local(jni, array_ref), array_size);
     }
 
-    jni_local_ref<jstring> wrapper::invoke_string_method(JNIEnv *jni, const jni_local_ref<jclass> &klass,
-                                                         const jni_local_ref<jobject> &instance, const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters)
+    local_reference<jstring> wrapper::invoke_string_method(JNIEnv *jni, const local_reference<jclass> &klass,
+                                                         const local_reference<jobject> &instance, const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         auto obj = invoke_object_method(jni, klass, instance, method_id, parameters);
-        VAR_CHECK(obj);
+        VAR_CHECK(*obj);
 
         const auto raw_obj = obj.release();
         const auto result = reinterpret_cast<jstring>(raw_obj);
@@ -263,23 +268,25 @@ namespace znb_kit {
         return make_local(jni, result);
     }
 
-    jbyte wrapper::invoke_byte_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
-                                      const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters)
+    jbyte wrapper::invoke_byte_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+                                      const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jbyte result;
 
         const auto raw_parameters = transform_parameters(parameters).data();
+        const auto klass_object = *klass;
 
-        if (IS_STATIC(klass))
+        if (IS_STATIC(klass_object))
         {
-            result = jni->CallStaticByteMethodA(*klass, method_id, raw_parameters);
+            result = jni->CallStaticByteMethodA(klass_object, method_id, raw_parameters);
         }
         else
         {
-            VAR_CHECK(instance);
+            const auto instance_object = *instance;
+            VAR_CHECK(instance_object);
 
-            result = jni->CallByteMethodA(*instance, method_id, raw_parameters);
+            result = jni->CallByteMethodA(instance_object, method_id, raw_parameters);
         }
 
         EXCEPT_CHECK(jni);
@@ -287,24 +294,26 @@ namespace znb_kit {
         return result;
     }
 
-    jint wrapper::invoke_int_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
+    jint wrapper::invoke_int_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
                                     const jmethodID &method_id,
-                                    const std::vector<jni_local_value_ref> &parameters)
+                                    const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jint result;
 
         const auto raw_parameters = transform_parameters(parameters).data();
+        const auto klass_object = *klass;
 
-        if (IS_STATIC(klass))
+        if (IS_STATIC(klass_object))
         {
-            result = jni->CallStaticIntMethodA(*klass, method_id, raw_parameters);
+            result = jni->CallStaticIntMethodA(klass_object, method_id, raw_parameters);
         }
         else
         {
-            VAR_CHECK(instance);
+            const auto instance_object = *instance;
+            VAR_CHECK(instance_object);
 
-            result = jni->CallIntMethodA(*instance, method_id, raw_parameters);
+            result = jni->CallIntMethodA(instance_object, method_id, raw_parameters);
         }
 
         EXCEPT_CHECK(jni);
@@ -312,23 +321,25 @@ namespace znb_kit {
         return result;
     }
 
-    jlong wrapper::invoke_long_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
-                                      const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters)
+    jlong wrapper::invoke_long_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+                                      const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jlong result;
 
         const auto raw_parameters = transform_parameters(parameters).data();
+        const auto klass_object = *klass;
 
-        if (IS_STATIC(klass))
+        if (IS_STATIC(klass_object))
         {
-            result = jni->CallStaticLongMethodA(*klass, method_id, raw_parameters);
+            result = jni->CallStaticLongMethodA(klass_object, method_id, raw_parameters);
         }
         else
         {
-            VAR_CHECK(instance);
+            const auto instance_object = *instance;
+            VAR_CHECK(instance_object);
 
-            result = jni->CallLongMethodA(*instance, method_id, raw_parameters);
+            result = jni->CallLongMethodA(instance_object, method_id, raw_parameters);
         }
 
         EXCEPT_CHECK(jni);
@@ -336,23 +347,25 @@ namespace znb_kit {
         return result;
     }
 
-    jshort wrapper::invoke_short_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
-                                        const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters)
+    jshort wrapper::invoke_short_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+                                        const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jshort result;
 
         const auto raw_parameters = transform_parameters(parameters).data();
+        const auto klass_object = *klass;
 
-        if (IS_STATIC(klass))
+        if (IS_STATIC(klass_object))
         {
-            result = jni->CallStaticShortMethodA(*klass, method_id, raw_parameters);
+            result = jni->CallStaticShortMethodA(klass_object, method_id, raw_parameters);
         }
         else
         {
-            VAR_CHECK(instance);
+            const auto instance_object = *instance;
+            VAR_CHECK(instance_object);
 
-            result = jni->CallShortMethodA(*instance, method_id, raw_parameters);
+            result = jni->CallShortMethodA(instance_object, method_id, raw_parameters);
         }
 
         EXCEPT_CHECK(jni);
@@ -360,23 +373,25 @@ namespace znb_kit {
         return result;
     }
 
-    jfloat wrapper::invoke_float_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
-                                        const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters)
+    jfloat wrapper::invoke_float_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+                                        const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jfloat result;
 
         const auto raw_parameters = transform_parameters(parameters).data();
+        const auto klass_object = *klass;
 
-        if (IS_STATIC(klass))
+        if (IS_STATIC(klass_object))
         {
-            result = jni->CallStaticFloatMethodA(*klass, method_id, raw_parameters);
+            result = jni->CallStaticFloatMethodA(klass_object, method_id, raw_parameters);
         }
         else
         {
-            VAR_CHECK(instance);
+            const auto instance_object = *instance;
+            VAR_CHECK(instance_object);
 
-            result = jni->CallFloatMethodA(*instance, method_id, raw_parameters);
+            result = jni->CallFloatMethodA(instance_object, method_id, raw_parameters);
         }
 
         EXCEPT_CHECK(jni);
@@ -384,23 +399,25 @@ namespace znb_kit {
         return result;
     }
 
-    jdouble wrapper::invoke_double_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
-                                          const jmethodID &method_id, const std::vector<jni_local_value_ref> &parameters)
+    jdouble wrapper::invoke_double_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+                                          const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jdouble result;
 
         const auto raw_parameters = transform_parameters(parameters).data();
+        const auto klass_object = *klass;
 
-        if (IS_STATIC(klass))
+        if (IS_STATIC(klass_object))
         {
             result = jni->CallStaticDoubleMethodA(*klass, method_id, raw_parameters);
         }
         else
         {
-            VAR_CHECK(instance);
+            const auto instance_object = *instance;
+            VAR_CHECK(instance_object);
 
-            result = jni->CallDoubleMethodA(*instance, method_id, raw_parameters);
+            result = jni->CallDoubleMethodA(instance_object, method_id, raw_parameters);
         }
 
         EXCEPT_CHECK(jni);
@@ -408,46 +425,53 @@ namespace znb_kit {
         return result;
     }
 
-    void wrapper::invoke_void_method(JNIEnv *jni, const jni_local_ref<jclass> &klass, const jni_local_ref<jobject> &instance,
+    void wrapper::invoke_void_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
                                      const jmethodID &method_id,
-                                     const std::vector<jni_local_value_ref> &parameters)
+                                     const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
 
         const auto raw_parameters = transform_parameters(parameters).data();
+        const auto klass_object = *klass;
 
-        if (IS_STATIC(klass))
+        if (IS_STATIC(klass_object))
         {
-            jni->CallStaticVoidMethodA(*klass, method_id, raw_parameters);
+            jni->CallStaticVoidMethodA(klass_object, method_id, raw_parameters);
         }
         else
         {
-            VAR_CHECK(instance)
+            const auto instance_object = *instance;
+            VAR_CHECK(instance_object)
 
-            jni->CallVoidMethodA(*instance, method_id, raw_parameters);
+            jni->CallVoidMethodA(instance_object, method_id, raw_parameters);
         }
 
         EXCEPT_CHECK(jni);
     }
 
-    jni_local_ref<jobject> wrapper::new_object(JNIEnv *jni, const jni_local_ref<jclass> &klass,
+    local_reference<jobject> wrapper::new_object(JNIEnv *jni, const local_reference<jclass> &klass,
                                                const jmethodID &method_id,
-                                               const std::vector<jni_local_value_ref> &parameters)
+                                               const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
-        VAR_CHECK(klass);
+
+        const auto klass_object = *klass;
+        VAR_CHECK(klass_object);
+
         VAR_CHECK(method_id);
 
-        const auto obj = jni->NewObjectA(*klass, method_id, transform_parameters(parameters).data());
+        const auto obj = jni->NewObjectA(klass_object, method_id, transform_parameters(parameters).data());
         EXCEPT_CHECK(jni);
 
         return make_local(jni, obj);
     }
 
-    void wrapper::register_natives(JNIEnv *jni, const std::string &klass_name, const jni_global_ref<jclass> &klass, const std::vector<jni_native_method> &methods)
+    void wrapper::register_natives(JNIEnv *jni, const std::string &klass_name, const global_reference<jclass> &klass, const std::vector<jni_native_method> &methods)
     {
         VAR_CHECK(jni);
-        VAR_CHECK(klass);
+
+        const auto klass_object = *klass;
+        VAR_CHECK(klass_object);
 
         VAR_CONTENT_CHECK(klass_name);
 
@@ -462,19 +486,18 @@ namespace znb_kit {
             jni_methods.emplace_back(method);
         }
 
-        jni->RegisterNatives(*klass, jni_methods.data(), static_cast<jint>(methods.size()));
+        jni->RegisterNatives(klass_object, jni_methods.data(), static_cast<jint>(methods.size()));
 
         EXCEPT_CHECK(jni);
 
         internal::tracker_manager::tracked_native_classes[klass_name] = methods.size();
     }
 
-    jni_local_ref<jobject> wrapper::get_object_array_element(JNIEnv *jni, const std::pair<jni_local_ref<jobjectArray>, size_t> &array, const int pos)
+    local_reference<jobject> wrapper::get_object_array_element(JNIEnv *jni, const std::pair<local_reference<jobjectArray>, size_t> &array, const int pos)
     {
         VAR_CHECK(jni);
 
         const auto array_ref = *array.first;
-
         VAR_CHECK(array_ref);
 
         if (pos < 0 || pos >= array.second)
@@ -482,53 +505,57 @@ namespace znb_kit {
             throw std::out_of_range("Index out of bounds for object array");
         }
 
-        jni_local_ref<jobject> result;
+        local_reference<jobject> result;
         const auto element = jni->GetObjectArrayElement(array_ref, pos);
         EXCEPT_CHECK(jni);
 
         return make_local(jni, element);
     }
 
-    void wrapper::unregister_natives(JNIEnv *jni, const std::string &klass_name, const jni_global_ref<jclass> &klass)
+    void wrapper::unregister_natives(JNIEnv *jni, const std::string &klass_name, const global_reference<jclass> &klass)
     {
         VAR_CHECK(jni);
-        VAR_CHECK(klass);
+
+        const auto klass_object = *klass;
+        VAR_CHECK(klass_object);
 
         VAR_CONTENT_CHECK(klass_name);
 
-        jni->UnregisterNatives(*klass);
+        jni->UnregisterNatives(klass_object);
 
         EXCEPT_CHECK(jni);
 
         internal::tracker_manager::tracked_native_classes.erase(klass_name);
     }
 
-    std::unique_ptr<const char, internal::jni_string_deleter> get_string_utf_chars(JNIEnv *jni, const jstring &string)
+    std::unique_ptr<const char, internal::policy::deleter_string> get_string_utf_chars(JNIEnv *jni, const jstring &string)
     {
         const char* chars = jni->GetStringUTFChars(string, nullptr);
         EXCEPT_CHECK(jni)
-        return std::unique_ptr<const char, internal::jni_string_deleter>(chars, internal::jni_string_deleter{jni, string});
+        return std::unique_ptr<const char, internal::policy::deleter_string>(chars, internal::policy::deleter_string{jni, string});
     }
 
-    std::string wrapper::get_string(JNIEnv *jni, const jni_local_ref<jstring> &string)
+    std::string wrapper::get_string(JNIEnv *jni, const local_reference<jstring> &string)
     {
         VAR_CHECK(jni);
-        VAR_CHECK(string);
 
-        std::string str(get_string_utf_chars(jni, *string.get()).get());
+        const auto string_object = *string;
+        VAR_CHECK(string_object);
+
+        std::string str(get_string_utf_chars(jni, string_object).get());
 
         return str;
     }
 
     //TODO: Later do it in more generic way
 
-    template auto wrapper::change_reference_policy<jni_local_ref<jobject>>(JNIEnv*, jni_reference_policy, const jni_local_ref<jobject>&);
-    template auto wrapper::change_reference_policy<jni_local_ref<jclass>>(JNIEnv*, jni_reference_policy, const jni_local_ref<jclass>&);
-    template auto wrapper::change_reference_policy<jni_local_ref<jstring>>(JNIEnv*, jni_reference_policy, const jni_local_ref<jstring>&);
-    template auto wrapper::change_reference_policy<jni_local_ref<jobjectArray>>(JNIEnv*, jni_reference_policy, const jni_local_ref<jobjectArray>&);
+    template auto wrapper::change_reference_policy<local_reference<jobject>>(JNIEnv*, jni_reference_policy, const local_reference<jobject>&);
+    template auto wrapper::change_reference_policy<local_reference<jclass>>(JNIEnv*, jni_reference_policy, const local_reference<jclass>&);
+    template auto wrapper::change_reference_policy<local_reference<jstring>>(JNIEnv*, jni_reference_policy, const local_reference<jstring>&);
+    template auto wrapper::change_reference_policy<local_reference<jobjectArray>>(JNIEnv*, jni_reference_policy, const local_reference<jobjectArray>&);
 
-    template auto wrapper::change_reference_policy<jni_global_ref<jobject>>(JNIEnv*, jni_reference_policy, const jni_global_ref<jobject>&);
-    template auto wrapper::change_reference_policy<jni_global_ref<jclass>>(JNIEnv*, jni_reference_policy, const jni_global_ref<jclass>&);
-    template auto wrapper::change_reference_policy<jni_global_ref<jstring>>(JNIEnv*, jni_reference_policy, const jni_global_ref<jstring>&);
-    template auto wrapper::change_reference_policy<jni_global_ref<jobjectArray>>(JNIEnv*, jni_reference_policy, const jni_global_ref<jobjectArray>&);
+    template auto wrapper::change_reference_policy<global_reference<jobject>>(JNIEnv*, jni_reference_policy, const global_reference<jobject>&);
+    template auto wrapper::change_reference_policy<global_reference<jclass>>(JNIEnv*, jni_reference_policy, const global_reference<jclass>&);
+    template auto wrapper::change_reference_policy<global_reference<jstring>>(JNIEnv*, jni_reference_policy, const global_reference<jstring>&);
+    template auto wrapper::change_reference_policy<global_reference<jobjectArray>>(JNIEnv*, jni_reference_policy, const global_reference<jobjectArray>&);
 }
