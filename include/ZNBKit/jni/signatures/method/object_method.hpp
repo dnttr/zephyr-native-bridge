@@ -14,9 +14,9 @@ namespace znb_kit
     public:
         using method_signature::method_signature;
 
-        jobject invoke(const jobject &instance, std::vector<jvalue> &parameters) override
+        jobject invoke(const jobject &instance, std::vector<local_value_reference> &parameters) override
         {
-            return wrapper::invoke_object_method(env, get_owner(), instance, get_identity(), parameters);
+            return wrapper::invoke_object_method(env, get_owner(), instance, get_identity(), parameters).get();
         }
     };
 }

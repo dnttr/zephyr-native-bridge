@@ -12,9 +12,9 @@
 
 namespace znb_kit
 {
-    std::vector<std::string> get_parameters(JNIEnv *env, const jni_local_ref<jobject> &instance);
+    std::vector<std::string> get_parameters(JNIEnv *env, const local_reference<jobject> &instance);
 
     bool compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2);
 
-    std::vector<jobject> get_methods(JNIEnv *env, const jni_local_ref<jobject> &instance);
+    std::vector<jobject> get_methods(JNIEnv *env, const local_reference<jobject> &instance);
 }

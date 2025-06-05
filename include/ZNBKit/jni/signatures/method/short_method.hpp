@@ -13,7 +13,7 @@ namespace znb_kit
     {
         using method_signature::method_signature;
 
-        short invoke(const jobject &instance, std::vector<jvalue> &parameters) override
+        short invoke(const jobject &instance, std::vector<local_value_reference> &parameters) override
         {
             return wrapper::invoke_short_method(env, get_owner(), instance, get_identity(), parameters);
         }

@@ -20,6 +20,8 @@ using global_reference = znb_kit::reference<T, internal::policy::deleter<T, inte
 using local_value_reference = znb_kit::reference<jvalue, internal::policy::deleter_val<internal::policy::local_policy>>;
 using global_value_reference = znb_kit::reference<jvalue, internal::policy::deleter_val<internal::policy::global_policy>>;
 
+using string_reference = znb_kit::reference<jstring, internal::policy::deleter_string>;
+
 namespace znb_kit
 {
     struct jni_native_method
@@ -120,7 +122,7 @@ namespace znb_kit
                                     const std::string &signature, bool is_static);
 
         template <typename KlassRefType, typename ObjRefType>
-        static local_reference<jobject> invoke_object_method(JNIEnv *jni, KlassRefType &klass,
+        static local_reference<jobject> invoke_object_method(JNIEnv *jni, const KlassRefType &klass,
                                                              const ObjRefType &instance,
                                                              const jmethodID &method_id,
                                                              const std::vector<local_value_reference> &parameters);
@@ -133,7 +135,7 @@ namespace znb_kit
             const std::vector<local_value_reference> &parameters);
 
         template <typename KlassRefType, typename ObjRefType>
-        static local_reference<jstring> invoke_string_method(JNIEnv *jni, const KlassRefType &klass,
+        static string_reference invoke_string_method(JNIEnv *jni, const KlassRefType &klass,
                                                              const ObjRefType &instance,
                                                              const jmethodID &method_id,
                                                              const std::vector<local_value_reference> &parameters);
@@ -193,7 +195,6 @@ namespace znb_kit
         template <typename KlassRefType>
         static void unregister_natives(JNIEnv *jni, const std::string &klass_name, const KlassRefType &klass);
 
-        template <typename StringRefType>
-        static std::string get_string(JNIEnv *jni, const StringRefType &string);
+        static std::string get_string(JNIEnv *jni, const string_reference &string);
     };
 }

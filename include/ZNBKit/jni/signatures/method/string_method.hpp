@@ -12,21 +12,22 @@ namespace znb_kit
     class string_method final : public object_method
     {
     public:
-        string_method(JNIEnv *env, std::shared_ptr<klass_signature> owner, std::string &name, std::string &signature,
+        string_method(JNIEnv *env, std::shared_ptr<klass_signature> owner, const std::string &name, const std::string &signature,
             const std::optional<std::vector<std::string>> &parameters, const bool is_static)
             : object_method(env, std::move(owner), name, signature, parameters, is_static)
         {
         }
 
-        jstring invoke(const jobject &instance, std::vector<jvalue> &parameters) override
+        jstring invoke(const jobject &instance, std::vector<local_value_reference> &parameters) override
         {
-            const auto object = wrapper::invoke_object_method(env, get_owner(), instance, get_identity(), parameters);
-            return reinterpret_cast<jstring>(object);
+            const auto object = wrapper::invoke_string_method(env, get_owner(), instance, get_identity(), parameters);
+            return object.get();
         }
 
-        std::string invoke_and_transform(JNIEnv *env, const jobject &instance, std::vector<jvalue> &parameters)
+        std::string invoke_and_transform(JNIEnv *env, const jobject &instance, const std::vector<local_value_reference> &parameters) const
         {
-            return get_string(env, invoke(instance, parameters), true);
+            const auto object = wrapper::invoke_string_method(env, get_owner(), instance, get_identity(), parameters);
+            return wrapper::get_string(env, object);
         }
     };
 }

@@ -216,7 +216,7 @@ namespace znb_kit
     }
 
     template <typename KlassRefType, typename ObjRefType>
-    local_reference<jobject> wrapper::invoke_object_method(JNIEnv *jni, KlassRefType &klass,
+    local_reference<jobject> wrapper::invoke_object_method(JNIEnv *jni, const KlassRefType &klass,
                                                            const ObjRefType &instance,
                                                            const jmethodID &method_id,
                                                            const std::vector<local_value_reference> &parameters)
@@ -262,7 +262,7 @@ namespace znb_kit
     }
 
     template <typename KlassRefType, typename ObjRefType>
-    local_reference<jstring> wrapper::invoke_string_method(JNIEnv *jni, const KlassRefType &klass,
+    string_reference wrapper::invoke_string_method(JNIEnv *jni, const KlassRefType &klass,
                                                            const ObjRefType &instance, const jmethodID &method_id,
                                                            const std::vector<local_value_reference> &parameters)
     {
@@ -528,7 +528,6 @@ namespace znb_kit
             throw std::out_of_range("Index out of bounds for object array");
         }
 
-        ObjRefType result;
         const auto element = jni->GetObjectArrayElement(array_ref, pos);
         EXCEPT_CHECK(jni);
 
@@ -561,8 +560,7 @@ namespace znb_kit
             chars, internal::policy::deleter_string{jni, string});
     }
 
-    template <typename StringRefType>
-    std::string wrapper::get_string(JNIEnv *jni, const StringRefType &string)
+    std::string wrapper::get_string(JNIEnv *jni, const string_reference &string)
     {
         VAR_CHECK(jni);
 
