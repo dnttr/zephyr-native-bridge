@@ -24,6 +24,12 @@ namespace znb_kit
             this->owner = wrapper::change_reference_policy<local_reference<jclass>>(jni, wrapper::jni_reference_policy::GLOBAL, klass);
         }
 
+        klass_signature(JNIEnv *jni, const global_reference<jclass> &owner_ref): jni(jni)
+        {
+            VAR_CHECK(jni);
+            this->owner.assign(jni, owner_ref);
+        }
+
         klass_signature(JNIEnv *jni, const local_reference<jclass> &owner_ref)
         {
             VAR_CHECK(jni);

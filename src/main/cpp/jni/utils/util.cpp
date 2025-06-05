@@ -11,7 +11,7 @@
 
 namespace znb_kit
 {
-    std::vector<jobject> get_methods(JNIEnv *env, const jni_local_ref<jobject> &instance)
+    std::vector<jobject> get_methods(JNIEnv *env, const local_reference<jobject> &instance)
     {
         const auto method_id = wrapper::get_method(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
 
@@ -36,7 +36,7 @@ namespace znb_kit
         return methods;
     }
 
-    std::vector<std::string> get_parameters(JNIEnv *env, const jni_local_ref<jobject> &instance)
+    std::vector<std::string> get_parameters(JNIEnv *env, const local_reference<jobject> &instance)
     {
         const auto getParameterTypes_method_id  = wrapper::get_method(env, "java/lang/reflect/Method", "getParameterTypes", "()[Ljava/lang/Class;", false);
         const auto getTypeName_method_id = wrapper::get_method(env, "java/lang/Class", "getTypeName", "()Ljava/lang/String;", false);

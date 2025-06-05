@@ -91,11 +91,11 @@ namespace znb_kit
 
         reference() = default;
 
-        explicit reference(T ref, JNIEnv *jni): ptr(ref, Deleter<T, Policy>(jni))
+        explicit reference(JNIEnv *jni, T ref): ptr(ref, Deleter<T, Policy>(jni))
         {
         }
 
-        reference(const reference &other, JNIEnv *jni)
+        reference(JNIEnv *jni, const reference &other)
         {
             if (other.ptr && jni)
             {
@@ -140,14 +140,13 @@ namespace znb_kit
         reference(const reference &) = delete;
         reference& operator=(const reference &) = delete;
 
-        reference& operator=(const reference &other, JNIEnv *jni)
+        reference& assign(JNIEnv *jni, const reference &other)
         {
             if (this != &other)
             {
                 reference temp(other, jni);
                 std::swap(ptr, temp.ptr);
             }
-
             return *this;
         }
     };
