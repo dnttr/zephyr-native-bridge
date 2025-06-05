@@ -10,8 +10,8 @@
 
 #define IS_STATIC(x) x != nullptr
 
-namespace znb_kit {
-
+namespace znb_kit
+{
     std::vector<jvalue> transform_parameters(const std::vector<local_value_reference> &parameters)
     {
         std::vector<jvalue> result;
@@ -110,7 +110,8 @@ namespace znb_kit {
             throw std::runtime_error("Policy is neither local nor global or it is both. Cannot change it.");
         }
 
-        if (new_policy == jni_reference_policy::LOCAL && is_local) {
+        if (new_policy == jni_reference_policy::LOCAL && is_local)
+        {
             return make_local(jni, static_cast<RawType>(raw_ref));
         }
 
@@ -139,9 +140,9 @@ namespace znb_kit {
     }
 
     local_reference<jclass> wrapper::search_for_class(JNIEnv *jni, const std::string &name,
-                                                    const std::string &caller_file,
-                                                    const int caller_line,
-                                                    const std::string &caller_function)
+                                                      const std::string &caller_file,
+                                                      const int caller_line,
+                                                      const std::string &caller_function)
     {
         VAR_CHECK(jni);
         VAR_CONTENT_CHECK(name);
@@ -158,7 +159,7 @@ namespace znb_kit {
         internal::tracker_manager::local_refs.insert(klass);
 
         const std::string call_site = "Called from " + get_path(caller_file) + ":" +
-                             std::to_string(caller_line) + " in " + caller_function;
+            std::to_string(caller_line) + " in " + caller_function;
 
         internal::tracker_manager::local_ref_sources[klass] = {
             __FILE__,
@@ -214,8 +215,11 @@ namespace znb_kit {
         return method_id;
     }
 
-    local_reference<jobject> wrapper::invoke_object_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
-                                                         const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
+    template <typename KlassRefType, typename ObjRefType>
+    local_reference<jobject> wrapper::invoke_object_method(JNIEnv *jni, KlassRefType &klass,
+                                                           const ObjRefType &instance,
+                                                           const jmethodID &method_id,
+                                                           const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jobject result;
@@ -242,8 +246,9 @@ namespace znb_kit {
         return make_local(jni, ref);
     }
 
+    template <typename KlassRefType, typename ObjRefType>
     std::pair<local_reference<jobjectArray>, size_t> wrapper::invoke_object_array_method(
-        JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+        JNIEnv *jni, const KlassRefType &klass, const ObjRefType &instance,
         const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         auto obj_ref = invoke_object_method(jni, klass, instance, method_id, parameters);
@@ -256,8 +261,10 @@ namespace znb_kit {
         return std::make_pair(make_local(jni, array_ref), array_size);
     }
 
-    local_reference<jstring> wrapper::invoke_string_method(JNIEnv *jni, const local_reference<jclass> &klass,
-                                                         const local_reference<jobject> &instance, const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
+    template <typename KlassRefType, typename ObjRefType>
+    local_reference<jstring> wrapper::invoke_string_method(JNIEnv *jni, const KlassRefType &klass,
+                                                           const ObjRefType &instance, const jmethodID &method_id,
+                                                           const std::vector<local_value_reference> &parameters)
     {
         auto obj = invoke_object_method(jni, klass, instance, method_id, parameters);
         VAR_CHECK(*obj);
@@ -268,7 +275,8 @@ namespace znb_kit {
         return make_local(jni, result);
     }
 
-    jbyte wrapper::invoke_byte_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+    template <typename KlassRefType, typename ObjRefType>
+    jbyte wrapper::invoke_byte_method(JNIEnv *jni, const KlassRefType &klass, const ObjRefType &instance,
                                       const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
@@ -294,7 +302,8 @@ namespace znb_kit {
         return result;
     }
 
-    jint wrapper::invoke_int_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+    template <typename KlassRefType, typename ObjRefType>
+    jint wrapper::invoke_int_method(JNIEnv *jni, const KlassRefType &klass, const ObjRefType &instance,
                                     const jmethodID &method_id,
                                     const std::vector<local_value_reference> &parameters)
     {
@@ -321,7 +330,8 @@ namespace znb_kit {
         return result;
     }
 
-    jlong wrapper::invoke_long_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+    template <typename KlassRefType, typename ObjRefType>
+    jlong wrapper::invoke_long_method(JNIEnv *jni, const KlassRefType &klass, const ObjRefType &instance,
                                       const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
@@ -347,8 +357,10 @@ namespace znb_kit {
         return result;
     }
 
-    jshort wrapper::invoke_short_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
-                                        const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
+    template <typename KlassRefType, typename ObjRefType>
+    jshort wrapper::invoke_short_method(JNIEnv *jni, const KlassRefType &klass, const ObjRefType &instance,
+                                        const jmethodID &method_id,
+                                        const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jshort result;
@@ -373,8 +385,10 @@ namespace znb_kit {
         return result;
     }
 
-    jfloat wrapper::invoke_float_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
-                                        const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
+    template <typename KlassRefType, typename ObjRefType>
+    jfloat wrapper::invoke_float_method(JNIEnv *jni, const KlassRefType &klass, const ObjRefType &instance,
+                                        const jmethodID &method_id,
+                                        const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jfloat result;
@@ -399,8 +413,10 @@ namespace znb_kit {
         return result;
     }
 
-    jdouble wrapper::invoke_double_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
-                                          const jmethodID &method_id, const std::vector<local_value_reference> &parameters)
+    template <typename KlassRefType, typename ObjRefType>
+    jdouble wrapper::invoke_double_method(JNIEnv *jni, const KlassRefType &klass, const ObjRefType &instance,
+                                          const jmethodID &method_id,
+                                          const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
         jdouble result;
@@ -425,7 +441,8 @@ namespace znb_kit {
         return result;
     }
 
-    void wrapper::invoke_void_method(JNIEnv *jni, const local_reference<jclass> &klass, const local_reference<jobject> &instance,
+    template <typename KlassRefType, typename ObjRefType>
+    void wrapper::invoke_void_method(JNIEnv *jni, const KlassRefType &klass, const ObjRefType &instance,
                                      const jmethodID &method_id,
                                      const std::vector<local_value_reference> &parameters)
     {
@@ -449,9 +466,10 @@ namespace znb_kit {
         EXCEPT_CHECK(jni);
     }
 
-    local_reference<jobject> wrapper::new_object(JNIEnv *jni, const local_reference<jclass> &klass,
-                                               const jmethodID &method_id,
-                                               const std::vector<local_value_reference> &parameters)
+    template <typename KlassRefType>
+    local_reference<jobject> wrapper::new_object(JNIEnv *jni, const KlassRefType &klass,
+                                                 const jmethodID &method_id,
+                                                 const std::vector<local_value_reference> &parameters)
     {
         VAR_CHECK(jni);
 
@@ -466,7 +484,9 @@ namespace znb_kit {
         return make_local(jni, obj);
     }
 
-    void wrapper::register_natives(JNIEnv *jni, const std::string &klass_name, const global_reference<jclass> &klass, const std::vector<jni_native_method> &methods)
+    template <typename KlassRefType>
+    void wrapper::register_natives(JNIEnv *jni, const std::string &klass_name, const KlassRefType &klass,
+                                   const std::vector<jni_native_method> &methods)
     {
         VAR_CHECK(jni);
 
@@ -477,7 +497,7 @@ namespace znb_kit {
 
         auto jni_methods = std::vector<JNINativeMethod>(methods.size());
 
-        for (const auto& customer : methods)
+        for (const auto &customer : methods)
         {
             const auto method = customer.jni_method;
 
@@ -493,7 +513,10 @@ namespace znb_kit {
         internal::tracker_manager::tracked_native_classes[klass_name] = methods.size();
     }
 
-    local_reference<jobject> wrapper::get_object_array_element(JNIEnv *jni, const std::pair<local_reference<jobjectArray>, size_t> &array, const int pos)
+    template <typename ArrayRefType>
+    local_reference<jobject> wrapper::get_object_array_element(JNIEnv *jni,
+                                                               const std::pair<ArrayRefType, size_t> &array,
+                                                               const int pos)
     {
         VAR_CHECK(jni);
 
@@ -505,14 +528,15 @@ namespace znb_kit {
             throw std::out_of_range("Index out of bounds for object array");
         }
 
-        local_reference<jobject> result;
+        ObjRefType result;
         const auto element = jni->GetObjectArrayElement(array_ref, pos);
         EXCEPT_CHECK(jni);
 
         return make_local(jni, element);
     }
 
-    void wrapper::unregister_natives(JNIEnv *jni, const std::string &klass_name, const global_reference<jclass> &klass)
+    template <typename KlassRefType>
+    void wrapper::unregister_natives(JNIEnv *jni, const std::string &klass_name, const KlassRefType &klass)
     {
         VAR_CHECK(jni);
 
@@ -528,14 +552,17 @@ namespace znb_kit {
         internal::tracker_manager::tracked_native_classes.erase(klass_name);
     }
 
-    std::unique_ptr<const char, internal::policy::deleter_string> get_string_utf_chars(JNIEnv *jni, const jstring &string)
+    std::unique_ptr<const char, internal::policy::deleter_string> get_string_utf_chars(
+        JNIEnv *jni, const jstring &string)
     {
-        const char* chars = jni->GetStringUTFChars(string, nullptr);
+        const char *chars = jni->GetStringUTFChars(string, nullptr);
         EXCEPT_CHECK(jni)
-        return std::unique_ptr<const char, internal::policy::deleter_string>(chars, internal::policy::deleter_string{jni, string});
+        return std::unique_ptr<const char, internal::policy::deleter_string>(
+            chars, internal::policy::deleter_string{jni, string});
     }
 
-    std::string wrapper::get_string(JNIEnv *jni, const local_reference<jstring> &string)
+    template <typename StringRefType>
+    std::string wrapper::get_string(JNIEnv *jni, const StringRefType &string)
     {
         VAR_CHECK(jni);
 
@@ -549,13 +576,21 @@ namespace znb_kit {
 
     //TODO: Later do it in more generic way
 
-    template auto wrapper::change_reference_policy<local_reference<jobject>>(JNIEnv*, jni_reference_policy, const local_reference<jobject>&);
-    template auto wrapper::change_reference_policy<local_reference<jclass>>(JNIEnv*, jni_reference_policy, const local_reference<jclass>&);
-    template auto wrapper::change_reference_policy<local_reference<jstring>>(JNIEnv*, jni_reference_policy, const local_reference<jstring>&);
-    template auto wrapper::change_reference_policy<local_reference<jobjectArray>>(JNIEnv*, jni_reference_policy, const local_reference<jobjectArray>&);
+    template auto wrapper::change_reference_policy<local_reference<jobject>>(
+        JNIEnv *, jni_reference_policy, const local_reference<jobject> &);
+    template auto wrapper::change_reference_policy<local_reference<jclass>>(
+        JNIEnv *, jni_reference_policy, const local_reference<jclass> &);
+    template auto wrapper::change_reference_policy<local_reference<jstring>>(
+        JNIEnv *, jni_reference_policy, const local_reference<jstring> &);
+    template auto wrapper::change_reference_policy<local_reference<jobjectArray>>(
+        JNIEnv *, jni_reference_policy, const local_reference<jobjectArray> &);
 
-    template auto wrapper::change_reference_policy<global_reference<jobject>>(JNIEnv*, jni_reference_policy, const global_reference<jobject>&);
-    template auto wrapper::change_reference_policy<global_reference<jclass>>(JNIEnv*, jni_reference_policy, const global_reference<jclass>&);
-    template auto wrapper::change_reference_policy<global_reference<jstring>>(JNIEnv*, jni_reference_policy, const global_reference<jstring>&);
-    template auto wrapper::change_reference_policy<global_reference<jobjectArray>>(JNIEnv*, jni_reference_policy, const global_reference<jobjectArray>&);
+    template auto wrapper::change_reference_policy<global_reference<jobject>>(
+        JNIEnv *, jni_reference_policy, const global_reference<jobject> &);
+    template auto wrapper::change_reference_policy<global_reference<jclass>>(
+        JNIEnv *, jni_reference_policy, const global_reference<jclass> &);
+    template auto wrapper::change_reference_policy<global_reference<jstring>>(
+        JNIEnv *, jni_reference_policy, const global_reference<jstring> &);
+    template auto wrapper::change_reference_policy<global_reference<jobjectArray>>(
+        JNIEnv *, jni_reference_policy, const global_reference<jobjectArray> &);
 }
