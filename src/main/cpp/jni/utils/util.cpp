@@ -11,7 +11,7 @@
 
 namespace znb_kit
 {
-    std::vector<jobject> get_methods(JNIEnv *env, const local_reference<jobject> &instance)
+    std::vector<jobject> get_methods(JNIEnv *env, const global_reference<jobject> &instance)
     {
         const auto method_id = wrapper::get_method(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
 
@@ -20,9 +20,9 @@ namespace znb_kit
             return {};
         }
 
-        const auto array_obj = wrapper::invoke_object_method(env, nullptr, instance, method_id, {});
-        const auto array = reinterpret_cast<jobjectArray>(*array_obj);
-        const auto array_size = env->GetArrayLength(array);
+        const auto array_obj = wrapper::invoke_object_array_method(env, nullptr, instance, method_id, {});
+        const auto array = array_obj.first.get();
+        const auto array_size = array_obj.second;
 
         std::vector<jobject> methods(array_size);
 
@@ -36,7 +36,7 @@ namespace znb_kit
         return methods;
     }
 
-    std::vector<std::string> get_parameters(JNIEnv *env, const local_reference<jobject> &instance)
+    std::vector<std::string> get_parameters(JNIEnv *env, const global_reference<jobject> &instance)
     {
         const auto getParameterTypes_method_id  = wrapper::get_method(env, "java/lang/reflect/Method", "getParameterTypes", "()[Ljava/lang/Class;", false);
         const auto getTypeName_method_id = wrapper::get_method(env, "java/lang/Class", "getTypeName", "()Ljava/lang/String;", false);
@@ -52,12 +52,11 @@ namespace znb_kit
 
             EXCEPT_CHECK(env);
 
-            const auto jstr = wrapper::invoke_string_method(env, nullptr, element, getTypeName_method_id, {});
+            const auto ref = wrapper::invoke_string_method(env, nullptr, element, getTypeName_method_id, {});
 
             EXCEPT_CHECK(env);
 
-            const auto key = wrapper::get_string(env, jstr);
-            methods[i] = key;
+            methods[i] = ref.get();
         }
 
         return methods;

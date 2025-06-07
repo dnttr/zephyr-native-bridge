@@ -6,6 +6,9 @@
 
 #include "ZNBKit/debug.hpp"
 
+// ERROR: Missing include for wrapper
+#include "ZNBKit/wrapper.hpp"
+
 std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(const std::string &classpath)
 {
     vm_data vm_data;

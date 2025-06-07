@@ -54,10 +54,10 @@ namespace
 namespace znb_kit
 {
 #define INSTANTIATE_GET_METHOD_SIGNATURE_OBJECT(TYPE) \
-    template std::unique_ptr<method_signature<TYPE>> jvmti_factory::get_method_signature<TYPE>(JNIEnv *, jvmtiEnv *, const klass_signature &, const jobject &);
+    template std::unique_ptr<method_signature<TYPE>> jvmti_factory::get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, global_reference<jclass> owner, const global_reference<jobject> &method);
 
 #define INSTANTIATE_GET_METHOD_SIGNATURE_PARAMETERS(TYPE) \
-    template std::unique_ptr<method_signature<TYPE>> jvmti_factory::get_method_signature<TYPE>(JNIEnv *jni, jvmtiEnv *jvmti, const klass_signature &owner_ks, const std::string& method_name, const std::vector<std::string>& target_params);
+    template std::unique_ptr<method_signature<TYPE>> jvmti_factory::get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, global_reference<jobject> owner, const std::string &method_name, const std::vector<std::string> &target_params);
 
 #define INSTANTIATE_LOOK_FOR_METHOD_SIGNATURES(TYPE) \
     template std::vector<std::unique_ptr<method_signature<TYPE>>> jvmti_factory::look_for_method_signatures<TYPE>(JNIEnv *, jvmtiEnv *, const klass_signature &);
@@ -100,9 +100,9 @@ namespace znb_kit
     }
 
     template <typename T>
-    std::unique_ptr<method_signature<T>> jvmti_factory::get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, const klass_signature &owner_ks, const jobject &method)
+    std::unique_ptr<method_signature<T>> jvmti_factory::get_method_signature(JNIEnv *jni, jvmtiEnv *jvmti, const global_reference<jclass> owner, const global_reference<jobject> &method)
     {
-        const auto method_id = jni->FromReflectedMethod(method);
+        const auto method_id = jni->FromReflectedMethod(method.get());
         if (!method_id) {
             debug_print("factory::get_method_signature() FromReflectedMethod failed.");
             return nullptr;
@@ -143,26 +143,26 @@ namespace znb_kit
             return nullptr;
         }
 
+        // ERROR: Missing ACC_STATIC constant definition
         const bool is_static = (modifiers & ACC_STATIC) != 0;
         auto params = get_parameters(jni, method);
-        auto ptr = std::make_shared<klass_signature>(owner_ks);
 
-        return create_method_instance<T>(jni, owner_ks, name, signature, params, is_static);
+        return create_method_instance<T>(jni, owner, name, signature, params, is_static);
     }
 
     template <typename T>
     std::unique_ptr<method_signature<T>> jvmti_factory::get_method_signature(JNIEnv *jni,
         jvmtiEnv *jvmti,
-        const klass_signature &owner_ks,
+        global_reference<jobject> owner,
         const std::string& method_name,
         const std::vector<std::string>& target_params)
     {
-        std::vector<jobject> methods = get_methods(jni, owner_ks.get_owner());
+        std::vector<jobject> methods = get_methods(jni, owner);
         std::unique_ptr<method_signature<T>> match = nullptr;
 
         for (jobject &method_obj : methods)
         {
-            if (auto probable_match = jvmti_factory::get_method_signature<T>(jni, jvmti, owner_ks, method_obj))
+            if (auto probable_match = jvmti_factory::get_method_signature<T>(jni, jvmti, owner, method_obj))
             {
                 if (method_name != probable_match->name)
                 {
@@ -195,7 +195,8 @@ namespace znb_kit
     template <typename T>
     std::vector<std::unique_ptr<method_signature<T>>> jvmti_factory::look_for_method_signatures(JNIEnv *jni, jvmtiEnv *jvmti, const klass_signature &owner_ks)
     {
-        const auto method_objects = get_methods(jni, owner_ks.get_owner());
+        auto owner = wrapper::change_reference_policy_as_new_copy<jclass>(jni, wrapper::jni_reference_policy::LOCAL, owner_ks.get_owner().get());
+        const auto method_objects = get_methods(jni, owner);
         std::vector<std::unique_ptr<method_signature<T>>> descriptors;
         descriptors.reserve(method_objects.size());
 
@@ -232,17 +233,16 @@ namespace znb_kit
                     continue;
                 }
 
-                if (!znb_kit::compare_parameters(it->second.parameters, method.parameters.value()))
+                // ERROR: Inconsistent namespace usage for compare_parameters
+                if (compare_parameters(it->second.parameters, method.parameters.value()))
                 {
-                    continue;
+                    result_methods.emplace_back(
+                        method.name,
+                        method.signature,
+                        it->second.has_func() ? it->second.func_ptr : nullptr
+                    );
+                    break;
                 }
-
-                result_methods.emplace_back(
-                    method.name,
-                    method.signature,
-                    it->second.has_func() ? it->second.func_ptr : nullptr
-                );
-                break;
             }
         }
         return result_methods;

@@ -134,6 +134,25 @@ namespace znb_kit
         return make_global(jni, static_cast<RawType>(global_ref));
     }
 
+    template <typename T>
+    auto wrapper::change_reference_policy_as_new_copy(JNIEnv *jni, const jni_reference_policy new_policy, const T &reference)
+    {
+        VAR_CHECK(jni);
+        VAR_CHECK(reference);
+
+        auto raw_ref = *reference;
+
+        using RawType = std::decay_t<decltype(raw_ref)>;
+
+        if (new_policy == jni_reference_policy::LOCAL)
+        {
+            return wrapper::make_local(jni, static_cast<RawType>(raw_ref));
+        }
+
+        return wrapper::make_global(jni, static_cast<RawType>(raw_ref));
+    }
+
+
     void wrapper::check_for_corruption()
     {
         internal::tracker_manager::check_for_corruption();
@@ -158,7 +177,7 @@ namespace znb_kit
 
         internal::tracker_manager::local_refs.insert(klass);
 
-        const std::string call_site = "Called from " + get_path(caller_file) + ":" +
+        const std::string call_site = "Called from " + caller_file + ":" +
             std::to_string(caller_line) + " in " + caller_function;
 
         internal::tracker_manager::local_ref_sources[klass] = {
@@ -216,7 +235,7 @@ namespace znb_kit
     }
 
     template <typename KlassRefType, typename ObjRefType>
-    local_reference<jobject> wrapper::invoke_object_method(JNIEnv *jni, const KlassRefType &klass,
+    local_reference<jobject> wrapper::invoke_object_method(JNIEnv *jni, KlassRefType &klass,
                                                            const ObjRefType &instance,
                                                            const jmethodID &method_id,
                                                            const std::vector<local_value_reference> &parameters)
@@ -272,7 +291,7 @@ namespace znb_kit
         const auto raw_obj = obj.release();
         const auto result = reinterpret_cast<jstring>(raw_obj);
 
-        return make_local(jni, result);
+        return {jni, result};
     }
 
     template <typename KlassRefType, typename ObjRefType>
@@ -549,27 +568,6 @@ namespace znb_kit
         EXCEPT_CHECK(jni);
 
         internal::tracker_manager::tracked_native_classes.erase(klass_name);
-    }
-
-    std::unique_ptr<const char, internal::policy::deleter_string> get_string_utf_chars(
-        JNIEnv *jni, const jstring &string)
-    {
-        const char *chars = jni->GetStringUTFChars(string, nullptr);
-        EXCEPT_CHECK(jni)
-        return std::unique_ptr<const char, internal::policy::deleter_string>(
-            chars, internal::policy::deleter_string{jni, string});
-    }
-
-    std::string wrapper::get_string(JNIEnv *jni, const string_reference &string)
-    {
-        VAR_CHECK(jni);
-
-        const auto string_object = *string;
-        VAR_CHECK(string_object);
-
-        std::string str(get_string_utf_chars(jni, string_object).get());
-
-        return str;
     }
 
     //TODO: Later do it in more generic way

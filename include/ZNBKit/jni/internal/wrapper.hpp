@@ -20,7 +20,7 @@ using global_reference = znb_kit::reference<T, internal::policy::deleter<T, inte
 using local_value_reference = znb_kit::reference<jvalue, internal::policy::deleter_val<internal::policy::local_policy>>;
 using global_value_reference = znb_kit::reference<jvalue, internal::policy::deleter_val<internal::policy::global_policy>>;
 
-using string_reference = znb_kit::reference<jstring, internal::policy::deleter_string>;
+using string_reference = internal::jni_string_reference;
 
 namespace znb_kit
 {
@@ -106,13 +106,15 @@ namespace znb_kit
 
         template <class T>
         auto change_reference_policy(JNIEnv *jni, jni_reference_policy new_policy, const T &reference);
+        template <class T>
+        auto change_reference_policy_as_new_copy(JNIEnv *jni, jni_reference_policy new_policy, const T &reference);
 
         static void check_for_corruption();
 
         static local_reference<jclass> search_for_class(JNIEnv *jni, const std::string &name,
-                                                        const std::string &caller_file = __builtin_FILE(),
-                                                        int caller_line = __builtin_LINE(),
-                                                        const std::string &caller_function = __builtin_FUNCTION());
+                                                      const std::string &caller_file = __builtin_FILE(),
+                                                      int caller_line = __builtin_LINE(),
+                                                      const std::string &caller_function = __builtin_FUNCTION());
 
         template <typename KlassRefType>
         static jmethodID get_method(JNIEnv *jni, const KlassRefType &klass, const std::string &method_name,
@@ -122,10 +124,10 @@ namespace znb_kit
                                     const std::string &signature, bool is_static);
 
         template <typename KlassRefType, typename ObjRefType>
-        static local_reference<jobject> invoke_object_method(JNIEnv *jni, const KlassRefType &klass,
-                                                             const ObjRefType &instance,
-                                                             const jmethodID &method_id,
-                                                             const std::vector<local_value_reference> &parameters);
+        static local_reference<jobject> invoke_object_method(JNIEnv *jni, KlassRefType &klass,
+                                                           const ObjRefType &instance,
+                                                           const jmethodID &method_id,
+                                                           const std::vector<local_value_reference> &parameters);
 
         template <typename KlassRefType, typename ObjRefType>
         static std::pair<local_reference<jobjectArray>, size_t> invoke_object_array_method(
@@ -136,15 +138,14 @@ namespace znb_kit
 
         template <typename KlassRefType, typename ObjRefType>
         static string_reference invoke_string_method(JNIEnv *jni, const KlassRefType &klass,
-                                                             const ObjRefType &instance,
-                                                             const jmethodID &method_id,
-                                                             const std::vector<local_value_reference> &parameters);
+                                                           const ObjRefType &instance,
+                                                           const jmethodID &method_id,
+                                                           const std::vector<local_value_reference> &parameters);
 
         template <typename KlassRefType, typename ObjRefType>
         static jbyte invoke_byte_method(JNIEnv *jni, const KlassRefType &klass,
                                         const ObjRefType &instance,
-                                        const jmethodID &method_id,
-                                        const std::vector<local_value_reference> &parameters);
+                                        const jmethodID &method_id, const std::vector<local_value_reference> &parameters);
 
         template <typename KlassRefType, typename ObjRefType>
         static jint invoke_int_method(JNIEnv *jni, const KlassRefType &klass,
@@ -154,20 +155,17 @@ namespace znb_kit
         template <typename KlassRefType, typename ObjRefType>
         static jlong invoke_long_method(JNIEnv *jni, const KlassRefType &klass,
                                         const ObjRefType &instance,
-                                        const jmethodID &method_id,
-                                        const std::vector<local_value_reference> &parameters);
+                                        const jmethodID &method_id, const std::vector<local_value_reference> &parameters);
 
         template <typename KlassRefType, typename ObjRefType>
         static jshort invoke_short_method(JNIEnv *jni, const KlassRefType &klass,
                                           const ObjRefType &instance,
-                                          const jmethodID &method_id,
-                                          const std::vector<local_value_reference> &parameters);
+                                          const jmethodID &method_id, const std::vector<local_value_reference> &parameters);
 
         template <typename KlassRefType, typename ObjRefType>
         static jfloat invoke_float_method(JNIEnv *jni, const KlassRefType &klass,
                                           const ObjRefType &instance,
-                                          const jmethodID &method_id,
-                                          const std::vector<local_value_reference> &parameters);
+                                          const jmethodID &method_id, const std::vector<local_value_reference> &parameters);
 
         template <typename KlassRefType, typename ObjRefType>
         static jdouble invoke_double_method(JNIEnv *jni, const KlassRefType &klass,
@@ -181,7 +179,7 @@ namespace znb_kit
 
         template <typename KlassRefType>
         static local_reference<jobject> new_object(JNIEnv *jni, const KlassRefType &klass, const jmethodID &method_id,
-                                                   const std::vector<local_value_reference> &parameters);
+                                                 const std::vector<local_value_reference> &parameters);
 
         template <typename KlassRefType>
         static void register_natives(JNIEnv *jni, const std::string &klass_name, const KlassRefType &klass,
@@ -189,12 +187,9 @@ namespace znb_kit
                                      methods);
 
         template <typename ArrayRefType>
-        static local_reference<jobject> get_object_array_element(JNIEnv *jni,
-                                                                 const std::pair<ArrayRefType, size_t> &array, int pos);
+        static local_reference<jobject> get_object_array_element(JNIEnv *jni, const std::pair<ArrayRefType, size_t> &array, int pos);
 
         template <typename KlassRefType>
         static void unregister_natives(JNIEnv *jni, const std::string &klass_name, const KlassRefType &klass);
-
-        static std::string get_string(JNIEnv *jni, const string_reference &string);
     };
 }

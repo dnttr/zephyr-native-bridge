@@ -30,21 +30,18 @@ namespace znb_kit
             const std::string &signature,
             const std::optional<std::vector<std::string>> &params,
             bool is_static);
+
     public:
         template <class T>
-        static std::unique_ptr<method_signature<T>> get_method_signature(
-            JNIEnv *jni,
-            jvmtiEnv *jvmti,
-            const klass_signature &owner_ks,
-            const jobject &method);
+        static std::unique_ptr<method_signature<T>> jvmti_factory::get_method_signature(
+            JNIEnv *jni, jvmtiEnv *jvmti, global_reference<jclass> owner,
+            const global_reference<jobject> &method);
 
         template <class T>
         static std::unique_ptr<method_signature<T>> get_method_signature(
-            JNIEnv *jni,
-            jvmtiEnv *jvmti,
-            const klass_signature &owner_ks,
-            const std::string& method_name,
-            const std::vector<std::string>& target_params);
+            JNIEnv *jni, jvmtiEnv *jvmti, global_reference<jobject> owner,
+            const std::string &method_name,
+            const std::vector<std::string> &target_params);
 
         template <class T>
         static std::vector<std::unique_ptr<method_signature<T>>> look_for_method_signatures(

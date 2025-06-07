@@ -9,6 +9,7 @@
 
 #include "ZNBKit/debug.hpp"
 #include "ZNBKit/jni/signatures/method_signature.hpp"
+#include <ranges>
 
 void znb_kit::jvmti_object::report_lacking_methods(std::unordered_multimap<std::string, jni_bridge_reference> map,
     std::vector<jni_native_method> &filtered)

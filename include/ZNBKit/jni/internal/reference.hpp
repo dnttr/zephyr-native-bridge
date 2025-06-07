@@ -10,6 +10,29 @@
 
 namespace internal
 {
+    class jni_string_reference
+    {
+        std::string value;
+
+    public:
+        jni_string_reference(JNIEnv *jni, const jstring &ref)
+        {
+            VAR_CHECK(jni);
+            VAR_CHECK(ref);
+
+            const char *string_utf_chars = jni->GetStringUTFChars(ref, nullptr);
+            VAR_CHECK(string_utf_chars);
+            EXCEPT_CHECK(jni);
+
+            const std::string str(string_utf_chars);
+            jni->ReleaseStringUTFChars(ref, string_utf_chars);
+
+            value = str;
+        }
+
+        [[nodiscard]] const std::string &get() const { return value; }
+    };
+
     class policy
     {
     public:
@@ -91,11 +114,11 @@ namespace znb_kit
 
         reference() = default;
 
-        explicit reference(JNIEnv *jni, T ref): ptr(ref, Deleter<T, Policy>(jni))
+        explicit reference(T ref, JNIEnv *jni): ptr(ref, Deleter<T, Policy>(jni))
         {
         }
 
-        reference(JNIEnv *jni, const reference &other)
+        reference(const reference &other, JNIEnv *jni)
         {
             if (other.ptr && jni)
             {
@@ -139,6 +162,17 @@ namespace znb_kit
 
         reference(const reference &) = delete;
         reference& operator=(const reference &) = delete;
+
+        reference& operator=(const reference &other, JNIEnv *jni)
+        {
+            if (this != &other)
+            {
+                reference temp(other, jni);
+                std::swap(ptr, temp.ptr);
+            }
+
+            return *this;
+        }
 
         reference& assign(JNIEnv *jni, const reference &other)
         {
