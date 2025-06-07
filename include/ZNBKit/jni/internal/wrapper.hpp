@@ -5,25 +5,39 @@
 #pragma once
 
 #include <jni.h>
+#include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
-#include "reference.hpp"
+#define VAR_CHECK(param) \
+    if (param == nullptr) { \
+        throw std::invalid_argument("Variable '" #param "' is null"); \
+    }
 
-template <typename T>
-using local_reference = znb_kit::reference<T, internal::policy::deleter<T, internal::policy::local_policy>>;
+#define VAR_CONTENT_CHECK(param) \
+    if (param.empty()) { \
+        throw std::invalid_argument("Variable '" #param "' is empty"); \
+    }
 
-template <typename T>
-using global_reference = znb_kit::reference<T, internal::policy::deleter<T, internal::policy::global_policy>>;
-
-using local_value_reference = znb_kit::reference<jvalue, internal::policy::deleter_val<internal::policy::local_policy>>;
-using global_value_reference = znb_kit::reference<jvalue, internal::policy::deleter_val<internal::policy::global_policy>>;
-
-using string_reference = internal::jni_string_reference;
+#define EXCEPT_CHECK(jni) \
+    if (jni->ExceptionCheck()) { \
+        jni->ExceptionDescribe(); \
+        jni->ExceptionClear(); \
+        throw std::runtime_error("JNI Exception occurred"); \
+}
 
 namespace znb_kit
 {
+
+    struct ref_info {
+        std::string file;
+        int line;
+        std::string method;
+        std::string details;
+    };
+
     struct jni_native_method
     {
         std::vector<char> name_buffer;
@@ -63,133 +77,86 @@ namespace znb_kit
         }
     };
 
-    class wrapper
+
+    inline thread_local std::unordered_set<jobject> local_refs;
+    inline thread_local std::unordered_map<jobject, ref_info> local_ref_sources;
+
+    class global_tracker
     {
-        /*static constexpr std::string_view java_lang_Class = "java/lang/Class";
-        static constexpr std::string_view java_lang_reflect_Method = "java/lang/reflect/Method";
-
-        static constexpr std::string_view getParameterTypes_name = "getParameterTypes";
-        static constexpr std::string_view getParameterTypes_signature = "()[Ljava/lang/Class;";
-
-        static constexpr std::string_view getDeclaredMethods_name = "getDeclaredMethods";
-        static constexpr std::string_view getDeclaredMethods_signature = "()[Ljava/lang/reflect/Method;";
-
-        static constexpr std::string_view getTypeName_name = "getTypeName";
-        static constexpr std::string_view getTypeName_signature = "()Ljava/lang/String;";*/
-
-        template <typename T>
-        static local_reference<T> make_local(JNIEnv *env, T ref)
-        {
-            return local_reference<T>(ref, {env});
-        }
-
-        template <typename T>
-        static global_reference<T> make_global(JNIEnv *env, T ref)
-        {
-            return global_reference<T>(ref, {env});
-        }
+        static std::mutex mutex;
+        static std::unordered_set<jobject> global_refs;
+        static std::unordered_map<jobject, ref_info> global_ref_sources;
 
     public:
-        enum class jni_reference_policy
-        {
-            LOCAL,
-            GLOBAL
-        };
+        static void add(const jobject &ref, const std::string &file = "", int line = 0, const std::string &method = "");
 
-        static jobject add_local_ref(JNIEnv *jni, const jobject &obj, const std::string &file, int line,
-                                     const std::string &method, bool needed_new_ref);
-        static void remove_local_ref(JNIEnv *jni, const jobject &obj);
+        static void remove(const jobject &ref);
 
-        static jobject add_global_ref(JNIEnv *jni, const jobject &obj, const std::string &file, int line,
-                                      const std::string &method, bool needed_new_ref);
-        static void remove_global_ref(JNIEnv *jni, const jobject &obj);
+        static size_t count();
 
-        template <class T>
-        auto change_reference_policy(JNIEnv *jni, jni_reference_policy new_policy, const T &reference);
-        template <class T>
-        auto change_reference_policy_as_new_copy(JNIEnv *jni, jni_reference_policy new_policy, const T &reference);
+        static void dump_refs();
+    };
 
+    class wrapper
+    {
+        static std::unordered_map<std::string, size_t> tracked_native_classes;
+
+    public:
         static void check_for_corruption();
 
-        static local_reference<jclass> search_for_class(JNIEnv *jni, const std::string &name,
-                                                      const std::string &caller_file = __builtin_FILE(),
-                                                      int caller_line = __builtin_LINE(),
-                                                      const std::string &caller_function = __builtin_FUNCTION());
+        static jobject add_local_ref(JNIEnv *jni, const jobject &obj,
+                           const std::string &file = __FILE__, int line = __LINE__,
+                           const std::string &method = __builtin_FUNCTION());
 
-        template <typename KlassRefType>
-        static jmethodID get_method(JNIEnv *jni, const KlassRefType &klass, const std::string &method_name,
+        static jobject add_global_ref(JNIEnv *jni, const jobject &obj,
+                                    const std::string &file = __FILE__, int line = __LINE__,
+                                    const std::string &method = __builtin_FUNCTION());
+
+        static void remove_local_ref(JNIEnv *jni, const jobject &obj);
+
+        static void remove_global_ref(JNIEnv *jni, const jobject &obj);
+
+        static void dump_local_refs();
+
+        static jclass search_for_class(JNIEnv *jni, const std::string &name,
+                                     const std::string &caller_file = __builtin_FILE(),
+                                     int caller_line = __builtin_LINE(),
+                                     const std::string &caller_function = __builtin_FUNCTION());
+
+        static jmethodID get_method(JNIEnv *jni, const jclass &klass, const std::string &method_name,
                                     const std::string &signature, bool is_static);
 
         static jmethodID get_method(JNIEnv *jni, const std::string &name, const std::string &method,
                                     const std::string &signature, bool is_static);
 
-        template <typename KlassRefType, typename ObjRefType>
-        static local_reference<jobject> invoke_object_method(JNIEnv *jni, KlassRefType &klass,
-                                                           const ObjRefType &instance,
-                                                           const jmethodID &method_id,
-                                                           const std::vector<local_value_reference> &parameters);
+        static jobject invoke_object_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
+                                            const jmethodID &method_id, const std::vector<jvalue> &parameters);
 
-        template <typename KlassRefType, typename ObjRefType>
-        static std::pair<local_reference<jobjectArray>, size_t> invoke_object_array_method(
-            JNIEnv *jni, const KlassRefType &klass,
-            const ObjRefType &instance,
-            const jmethodID &method_id,
-            const std::vector<local_value_reference> &parameters);
+        static jbyte invoke_byte_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
+                                        const jmethodID &method_id, const std::vector<jvalue> &parameters);
 
-        template <typename KlassRefType, typename ObjRefType>
-        static string_reference invoke_string_method(JNIEnv *jni, const KlassRefType &klass,
-                                                           const ObjRefType &instance,
-                                                           const jmethodID &method_id,
-                                                           const std::vector<local_value_reference> &parameters);
+        static jint invoke_int_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
+                                      const jmethodID &method_id, const std::vector<jvalue> &parameters);
 
-        template <typename KlassRefType, typename ObjRefType>
-        static jbyte invoke_byte_method(JNIEnv *jni, const KlassRefType &klass,
-                                        const ObjRefType &instance,
-                                        const jmethodID &method_id, const std::vector<local_value_reference> &parameters);
+        static jlong invoke_long_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
+                                        const jmethodID &method_id, const std::vector<jvalue> &parameters);
 
-        template <typename KlassRefType, typename ObjRefType>
-        static jint invoke_int_method(JNIEnv *jni, const KlassRefType &klass,
-                                      const ObjRefType &instance,
-                                      const jmethodID &method_id, const std::vector<local_value_reference> &parameters);
+        static jshort invoke_short_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
+                                          const jmethodID &method_id, const std::vector<jvalue> &parameters);
 
-        template <typename KlassRefType, typename ObjRefType>
-        static jlong invoke_long_method(JNIEnv *jni, const KlassRefType &klass,
-                                        const ObjRefType &instance,
-                                        const jmethodID &method_id, const std::vector<local_value_reference> &parameters);
+        static jfloat invoke_float_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
+                                          const jmethodID &method_id, const std::vector<jvalue> &parameters);
 
-        template <typename KlassRefType, typename ObjRefType>
-        static jshort invoke_short_method(JNIEnv *jni, const KlassRefType &klass,
-                                          const ObjRefType &instance,
-                                          const jmethodID &method_id, const std::vector<local_value_reference> &parameters);
+        static jdouble invoke_double_method(JNIEnv *jni, const jclass &klass, const jobject &instance, const jmethodID &method_id,
+                                            const std::vector<jvalue> &parameters);
 
-        template <typename KlassRefType, typename ObjRefType>
-        static jfloat invoke_float_method(JNIEnv *jni, const KlassRefType &klass,
-                                          const ObjRefType &instance,
-                                          const jmethodID &method_id, const std::vector<local_value_reference> &parameters);
+        static void invoke_void_method(JNIEnv *jni, const jclass &klass, const jobject &instance, const jmethodID &method_id,
+                                       const std::vector<jvalue> &parameters);
 
-        template <typename KlassRefType, typename ObjRefType>
-        static jdouble invoke_double_method(JNIEnv *jni, const KlassRefType &klass,
-                                            const ObjRefType &instance, const jmethodID &method_id,
-                                            const std::vector<local_value_reference> &parameters);
+        static void register_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass, const std::vector<jni_native_method> &methods);
 
-        template <typename KlassRefType, typename ObjRefType>
-        static void invoke_void_method(JNIEnv *jni, const KlassRefType &klass,
-                                       const ObjRefType &instance, const jmethodID &method_id,
-                                       const std::vector<local_value_reference> &parameters);
+        static void unregister_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass);
 
-        template <typename KlassRefType>
-        static local_reference<jobject> new_object(JNIEnv *jni, const KlassRefType &klass, const jmethodID &method_id,
-                                                 const std::vector<local_value_reference> &parameters);
-
-        template <typename KlassRefType>
-        static void register_natives(JNIEnv *jni, const std::string &klass_name, const KlassRefType &klass,
-                                     const std::vector<jni_native_method> &
-                                     methods);
-
-        template <typename ArrayRefType>
-        static local_reference<jobject> get_object_array_element(JNIEnv *jni, const std::pair<ArrayRefType, size_t> &array, int pos);
-
-        template <typename KlassRefType>
-        static void unregister_natives(JNIEnv *jni, const std::string &klass_name, const KlassRefType &klass);
+        static std::string obtain_klass_name(JNIEnv *jni, const jclass &klass);
     };
 }

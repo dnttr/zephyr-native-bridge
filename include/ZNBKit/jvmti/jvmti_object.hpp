@@ -100,8 +100,8 @@ namespace znb_kit
 {
     template std::pair<std::vector<jni_native_method>, size_t> jvmti_object::try_mapping_methods<
         void, jobject, jstring, jint, jlong,
-        jboolean, jfloat, jdouble, jbyte, jchar, jshort>(
-            const klass_signature &, const std::unordered_multimap<std::string, jni_bridge_reference> &);
+        jboolean, jfloat, jdouble, jbyte, jchar, jshort
+    >(const klass_signature &, const std::unordered_multimap<std::string, jni_bridge_reference> &);
 
     template std::pair<std::vector<jni_native_method>, size_t> jvmti_object::create_mappings<void>(
         const klass_signature &, const std::unordered_multimap<std::string, jni_bridge_reference> &);

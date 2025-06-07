@@ -14,38 +14,62 @@ namespace znb_kit
     class klass_signature
     {
         JNIEnv *jni;
-        global_reference<jclass> owner;
+        jclass owner;
 
         const std::string klass_name;
     public:
         klass_signature(JNIEnv *jni, const std::string &klass_name): jni(jni), klass_name(klass_name)
         {
             const auto klass = wrapper::search_for_class(jni, klass_name);
-            this->owner = wrapper::change_reference_policy<local_reference<jclass>>(jni, wrapper::jni_reference_policy::GLOBAL, klass);
+            owner = reinterpret_cast<jclass>(wrapper::add_global_ref(jni, klass));
+            wrapper::remove_local_ref(jni, klass);
         }
 
-        klass_signature(JNIEnv *jni, const global_reference<jclass> &owner_ref): jni(jni)
+        klass_signature(JNIEnv *jni, const jclass &owner)
         {
             VAR_CHECK(jni);
-            this->owner.assign(jni, owner_ref);
-        }
-
-        klass_signature(JNIEnv *jni, const local_reference<jclass> &owner_ref)
-        {
-            VAR_CHECK(jni);
+            VAR_CHECK(owner);
 
             this->jni = jni;
-            this->owner = wrapper::change_reference_policy<local_reference<jclass>>(jni, wrapper::jni_reference_policy::GLOBAL, owner_ref);
+            this->owner = reinterpret_cast<jclass>(wrapper::add_global_ref(jni, owner));
         }
 
-        [[nodiscard]] const auto &get_owner() const
+        ~klass_signature()
+        {
+            if (owner != nullptr && jni != nullptr)
+            {
+                wrapper::remove_global_ref(jni, owner);
+                owner = nullptr;
+            }
+        }
+
+        klass_signature(const klass_signature& other) : jni(other.jni) {
+            if (other.owner) {
+                owner = reinterpret_cast<jclass>(wrapper::add_global_ref(jni, other.owner));
+            } else {
+                owner = nullptr;
+            }
+        }
+
+        klass_signature& operator=(const klass_signature& other) {
+            if (this != &other) {
+                if (owner && jni) {
+                    wrapper::remove_global_ref(jni, owner);
+                }
+
+                jni = other.jni;
+                if (other.owner) {
+                    owner = reinterpret_cast<jclass>(wrapper::add_global_ref(jni, other.owner));
+                } else {
+                    owner = nullptr;
+                }
+            }
+            return *this;
+        }
+
+        [[nodiscard]] jclass get_owner() const
         {
             return owner;
-        }
-
-        [[nodiscard]] const std::string &get_klass_name() const
-        {
-            return klass_name;
         }
     };
 }

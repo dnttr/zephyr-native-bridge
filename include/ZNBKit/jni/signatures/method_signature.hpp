@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include <iostream>
 #include <jni.h>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include "ZNBKit/jni/signatures/klass_signature.hpp"
 
@@ -30,24 +30,20 @@ namespace znb_kit
         {
             if (owner == nullptr || env == nullptr)
             {
-                throw std::runtime_error(
-                    "method_signature::build_identity: owner or jni is null for method '" + name + "' with signature '"
-                    + signature + "'");
+                throw std::runtime_error("method_signature::build_identity: owner or jni is null for method '" + name + "' with signature '" + signature + "'");
             }
 
-            const auto klass = owner;
+            const auto klass = owner->get_owner();
 
             if (klass == nullptr)
             {
-                throw std::runtime_error(
-                    "method_signature::build_identity: owner->get_owner() returned null jclass for method '" + name +
-                    "' with signature '" + signature + "' (declaring class: unknown)");
+                throw std::runtime_error("method_signature::build_identity: owner->get_owner() returned null jclass for method '" + name + "' with signature '" + signature + "' (declaring class: unknown)");
             }
 
             return wrapper::get_method(env, klass, name, signature, this->is_static);
         }
-
     public:
+
         const std::string name;
         const std::string signature;
 
@@ -55,8 +51,7 @@ namespace znb_kit
 
         virtual ~method_signature() = default;
 
-        method_signature(JNIEnv *env, std::shared_ptr<klass_signature> owner, std::string name, std::string signature,
-                         std::optional<std::vector<std::string>> parameters, const bool is_static)
+        method_signature(JNIEnv *env, std::shared_ptr<klass_signature> owner, std::string name, std::string signature, std::optional<std::vector<std::string>> parameters, const bool is_static)
             :
             env(env),
             owner(std::move(owner)),
@@ -69,9 +64,7 @@ namespace znb_kit
         }
 
         explicit method_signature(nullptr_t) = delete;
-
         method_signature(const method_signature &) = delete;
-
         method_signature &operator=(const method_signature &) = delete;
 
         method_signature(method_signature &&other) noexcept
@@ -101,11 +94,11 @@ namespace znb_kit
             return *this;
         }
 
-        virtual T invoke(const jobject &instance, std::vector<local_value_reference> &parameters) = 0;
+        virtual T invoke(const jobject &instance, std::vector<jvalue> &parameters) = 0;
 
-        [[nodiscard]] auto get_owner() const
+        [[nodiscard]] jclass get_owner() const
         {
-            return owner.get();
+            return owner->get_owner();
         }
 
         [[nodiscard]] jmethodID get_identity() const

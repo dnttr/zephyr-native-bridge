@@ -7,11 +7,12 @@
 #include <algorithm>
 #include <unordered_set>
 
+#include "ZNBKit/debug.hpp"
 #include "ZNBKit/jni/internal/wrapper.hpp"
 
 namespace znb_kit
 {
-    std::vector<jobject> get_methods(JNIEnv *env, const global_reference<jobject> &instance)
+    std::vector<jobject> get_methods(JNIEnv *env, const jobject &instance)
     {
         const auto method_id = wrapper::get_method(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
 
@@ -20,9 +21,8 @@ namespace znb_kit
             return {};
         }
 
-        const auto array_obj = wrapper::invoke_object_array_method(env, nullptr, instance, method_id, {});
-        const auto array = array_obj.first.get();
-        const auto array_size = array_obj.second;
+        const auto array = reinterpret_cast<jobjectArray>(wrapper::invoke_object_method(env, nullptr, instance, method_id, {}));
+        const auto array_size = env->GetArrayLength(array);
 
         std::vector<jobject> methods(array_size);
 
@@ -33,31 +33,69 @@ namespace znb_kit
             EXCEPT_CHECK(env);
         }
 
+        wrapper::remove_local_ref(env, array);
+
         return methods;
     }
 
-    std::vector<std::string> get_parameters(JNIEnv *env, const global_reference<jobject> &instance)
+    std::string get_string(JNIEnv *env, const jstring &string, const bool release)
+    {
+        const char *key = env->GetStringUTFChars(string, nullptr);
+
+        EXCEPT_CHECK(env);
+
+        if (key == nullptr)
+        {
+            debug_print("get_string() is unable to get UTF string");
+            return {};
+        }
+
+        std::string str(key);
+
+        if (release)
+        {
+            env->ReleaseStringUTFChars(string, key);
+        }
+
+        return str;
+    }
+
+    void delete_references(JNIEnv *env, const std::vector<jobject> &references)
+    {
+        for (const auto &reference : references)
+        {
+            wrapper::remove_local_ref(env, reference);
+        }
+    }
+
+    std::vector<std::string> get_parameters(JNIEnv *env, const jobject &instance)
     {
         const auto getParameterTypes_method_id  = wrapper::get_method(env, "java/lang/reflect/Method", "getParameterTypes", "()[Ljava/lang/Class;", false);
         const auto getTypeName_method_id = wrapper::get_method(env, "java/lang/Class", "getTypeName", "()Ljava/lang/String;", false);
 
-        const auto array = wrapper::invoke_object_array_method(env, nullptr, instance, getParameterTypes_method_id, {});
-        const auto array_size = array.second;
+        const auto array = reinterpret_cast<jobjectArray>(wrapper::invoke_object_method(env, nullptr, instance, getParameterTypes_method_id, {}));
+        const auto array_size = env->GetArrayLength(array);
 
         std::vector<std::string> methods(array_size);
 
         for (int i = 0; i < array_size; ++i)
         {
-            const auto element = wrapper::get_object_array_element(env, array, i);
+            const auto element = env->GetObjectArrayElement(array, i);
 
             EXCEPT_CHECK(env);
 
-            const auto ref = wrapper::invoke_string_method(env, nullptr, element, getTypeName_method_id, {});
+            const auto jstr = reinterpret_cast<jstring>(wrapper::invoke_object_method(env, nullptr, element, getTypeName_method_id, {}));
 
             EXCEPT_CHECK(env);
 
-            methods[i] = ref.get();
+            const auto key = get_string(env, jstr);
+            methods[i] = key;
+
+            wrapper::remove_local_ref(env, jstr);
+            wrapper::remove_local_ref(env, element);
         }
+
+        wrapper::remove_local_ref(env, array);
 
         return methods;
     }
