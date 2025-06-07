@@ -8,8 +8,6 @@
 
 #include "ZNBKit/vm_object.hpp"
 
-#include "config.hpp"
-
 inline std::unique_ptr<znb_kit::vm_object> vm = nullptr;
 
 inline znb_kit::vm_object *get_vm()

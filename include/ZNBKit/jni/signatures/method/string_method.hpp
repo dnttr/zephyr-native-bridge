@@ -13,9 +13,9 @@ namespace znb_kit
     class string_method final : public object_method
     {
     public:
-        string_method(JNIEnv *env, std::shared_ptr<klass_signature> owner, std::string &name, std::string &signature,
+        string_method(JNIEnv *env, const klass_signature &owner, const std::string &name, const std::string &signature,
             const std::optional<std::vector<std::string>> &parameters, const bool is_static)
-            : object_method(env, std::move(owner), name, signature, parameters, is_static)
+            : object_method(env, owner, name, signature, parameters, is_static)
         {
         }
 

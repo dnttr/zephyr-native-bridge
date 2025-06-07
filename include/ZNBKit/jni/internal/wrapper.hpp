@@ -42,22 +42,21 @@ namespace znb_kit
     {
         std::vector<char> name_buffer;
         std::vector<char> signature_buffer;
+        void *fn_ptr;
 
-        JNINativeMethod jni_method{};
-
-        jni_native_method(const std::string &name, const std::string &signature, void *func_ptr)
+        jni_native_method(const std::string &name_str, const std::string &sig_str, void *func_ptr_val)
+            : fn_ptr(func_ptr_val)
         {
-            name_buffer.assign(name.begin(), name.end());
+            name_buffer.assign(name_str.begin(), name_str.end());
             name_buffer.push_back('\0');
 
-            signature_buffer.assign(signature.begin(), signature.end());
+            signature_buffer.assign(sig_str.begin(), sig_str.end());
             signature_buffer.push_back('\0');
-
-            jni_method.name = name_buffer.data();
-            jni_method.signature = signature_buffer.data();
-            jni_method.fnPtr = func_ptr;
         }
+
+        jni_native_method() : fn_ptr(nullptr) {}
     };
+
 
     struct jni_bridge_reference
     {

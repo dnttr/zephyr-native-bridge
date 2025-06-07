@@ -75,7 +75,7 @@ namespace znb_kit
         const std::optional<std::vector<std::string>> &params, \
         bool is_static) \
     { \
-        return std::make_unique<SUFFIX##_method>(jni, std::make_shared<klass_signature>(owner_ks), name, signature, params, is_static); \
+        return std::make_unique<SUFFIX##_method>(jni, klass_signature(owner_ks), name, signature, params, is_static); \
     }
 
 #define MAPPINGS(APPLY) \

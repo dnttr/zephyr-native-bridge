@@ -43,7 +43,30 @@ TEST_CASE_METHOD(method_proxy_fixture, "JVMTI method mapping", "[jvmti]") {
 
 
         auto mapped = jvmti.try_mapping_methods<void>(klass, jvm_methods_map);
-        //TODO: finish the test
-        //move it somewhere else, it shouldn't be here
+
+        wrapper::register_natives(
+            jni_env,
+            "org/dnttr/zephyr/bridge/Native",
+            klass.get_owner(), mapped.first);
+
+        std::string instance_name = "<init>";
+        std::string instance_signature = "()V";
+
+        auto method = void_method(vm->get_env(), klass, instance_name, instance_signature, std::nullopt, false);
+
+        auto klass_instance = instance(get_vm(), method, {});
+
+        std::string native_void_name{"native_method1"};
+        std::string native_void_signature{"()V"};
+
+        void_method m_v{ get_vm()->get_env(),
+                        klass,
+                        native_void_name,
+                        native_void_signature,
+                        std::nullopt,
+                        false };
+
+        std::vector<jvalue> parameters;
+        m_v.invoke(klass_instance.get_object(), parameters);
     }
 }

@@ -16,7 +16,7 @@ namespace znb_kit
 
     std::unordered_map<std::string, size_t> wrapper::tracked_native_classes;
 
-    void global_tracker::add(const jobject &ref, const std::string &file, int line, const std::string &method)
+    void global_tracker::add(const jobject &ref, const std::string &file, const int line, const std::string &method)
     {
         std::lock_guard lock(mutex);
 
@@ -45,19 +45,19 @@ namespace znb_kit
         std::lock_guard lock(mutex);
         debug_print_cerr("Dumping " + std::to_string(global_refs.size()) + " global references:");
 
-        for (const auto& ref : global_refs)
+        for (const auto &ref : global_refs)
         {
             if (auto it = global_ref_sources.find(ref); it != global_ref_sources.end())
             {
-                const auto& info = it->second;
+                const auto &info = it->second;
                 debug_print_cerr("Global ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                                " created at " + info.file + ":" + std::to_string(info.line) +
-                                " in " + info.method);
+                    " created at " + info.file + ":" + std::to_string(info.line) +
+                    " in " + info.method);
             }
             else
             {
                 debug_print_cerr("Global ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                                " (source unknown)");
+                    " (source unknown)");
             }
         }
     }
@@ -94,42 +94,44 @@ namespace znb_kit
         {
             debug_print_cerr("Warning: Tracked native classes are not empty. ");
 
-            for (const auto&[name, natives] : tracked_native_classes)
+            for (const auto &[name, natives] : tracked_native_classes)
             {
-                debug_print_cerr("Class " + name + " has " + std::to_string(natives) + " references which were not deleted.");
+                debug_print_cerr(
+                    "Class " + name + " has " + std::to_string(natives) + " references which were not deleted.");
             }
 
             return;
         }
 
-        debug_print_cerr("No references left. All good i think, unless not using wrapper, then well, you are on your own. :>");
+        debug_print_cerr(
+            "No references left. All good i think, unless not using wrapper, then well, you are on your own. :>");
     }
 
     void wrapper::dump_local_refs()
     {
         debug_print_cerr("Dumping " + std::to_string(local_refs.size()) + " local references:");
-        for (const auto& ref : local_refs)
+        for (const auto &ref : local_refs)
         {
             auto it = local_ref_sources.find(ref);
             if (it != local_ref_sources.end())
             {
-                const auto& info = it->second;
+                const auto &info = it->second;
                 debug_print_cerr("Local ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                               " created at " + info.file + ":" + std::to_string(info.line) +
-                               " in " + info.method +
-                               (info.details.empty() ? "" : " (" + info.details + ")"));
+                    " created at " + info.file + ":" + std::to_string(info.line) +
+                    " in " + info.method +
+                    (info.details.empty() ? "" : " (" + info.details + ")"));
             }
             else
             {
                 debug_print_cerr("Local ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                               " (source unknown)");
+                    " (source unknown)");
             }
         }
     }
 
     jobject wrapper::add_local_ref(JNIEnv *jni, const jobject &obj,
-                                  const std::string &file, int line,
-                                  const std::string &method)
+                                   const std::string &file, int line,
+                                   const std::string &method)
     {
         VAR_CHECK(jni);
 
@@ -157,8 +159,8 @@ namespace znb_kit
     }
 
     jobject wrapper::add_global_ref(JNIEnv *jni, const jobject &obj,
-                                   const std::string &file, int line,
-                                   const std::string &method)
+                                    const std::string &file, int line,
+                                    const std::string &method)
     {
         VAR_CHECK(jni);
 
@@ -184,9 +186,9 @@ namespace znb_kit
     }
 
     jclass wrapper::search_for_class(JNIEnv *jni, const std::string &name,
-                               const std::string &caller_file,
-                               const int caller_line,
-                               const std::string &caller_function)
+                                     const std::string &caller_file,
+                                     const int caller_line,
+                                     const std::string &caller_function)
     {
         VAR_CHECK(jni);
         VAR_CONTENT_CHECK(name);
@@ -203,7 +205,7 @@ namespace znb_kit
         local_refs.insert(klass);
 
         std::string call_site = "Called from " + get_path(caller_file) + ":" +
-                             std::to_string(caller_line) + " in " + caller_function;
+            std::to_string(caller_line) + " in " + caller_function;
 
         local_ref_sources[klass] = {
             __FILE__,
@@ -258,7 +260,7 @@ namespace znb_kit
     }
 
     jobject wrapper::invoke_object_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
-                                         const jmethodID &method_id, const std::vector<jvalue> &parameters)
+                                          const jmethodID &method_id, const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(jni);
 
@@ -447,31 +449,6 @@ namespace znb_kit
         EXCEPT_CHECK(jni);
     }
 
-    void wrapper::register_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass, const std::vector<jni_native_method> &methods)
-    {
-        VAR_CHECK(jni);
-        VAR_CHECK(klass);
-
-        VAR_CONTENT_CHECK(klass_name);
-
-        auto jni_methods = std::vector<JNINativeMethod>(methods.size());
-
-        for (const auto& customer : methods)
-        {
-            const auto method = customer.jni_method;
-
-            VAR_CHECK(method.fnPtr);
-
-            jni_methods.emplace_back(method);
-        }
-
-        jni->RegisterNatives(klass, jni_methods.data(), static_cast<jint>(methods.size()));
-
-        EXCEPT_CHECK(jni);
-
-        tracked_native_classes[klass_name] = methods.size();
-    }
-
     void wrapper::unregister_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass)
     {
         VAR_CHECK(jni);
@@ -486,12 +463,73 @@ namespace znb_kit
         tracked_native_classes.erase(klass_name);
     }
 
-    //TODO: Implement obtain_klass_name, otherwise it will return empty string and therefore crash. Needed for tracking
-    std::string wrapper::obtain_klass_name(JNIEnv *jni, const jclass &klass)
+    void wrapper::register_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass,
+                                   const std::vector<jni_native_method> &methods_vec)
     {
         VAR_CHECK(jni);
         VAR_CHECK(klass);
+        VAR_CONTENT_CHECK(klass_name);
 
-        return "";
+        if (methods_vec.empty())
+        {
+            debug_print_cerr("No methods to register for class " + klass_name);
+            return;
+        }
+
+        std::vector<JNINativeMethod> jni_methods_for_jni_call;
+        jni_methods_for_jni_call.reserve(methods_vec.size());
+
+        for (const auto &method_descriptor : methods_vec)
+        {
+            if (method_descriptor.name_buffer.empty() || method_descriptor.name_buffer.front() == '\0' ||
+                method_descriptor.signature_buffer.empty() || method_descriptor.signature_buffer.front() == '\0' ||
+                !method_descriptor.fn_ptr)
+            {
+                debug_print_cerr(
+                    "Skipping registration of invalid method for class '" + klass_name +
+                    "': Name empty or invalid, Sig empty or invalid, or Func ptr null.");
+
+                continue;
+            }
+
+            jni_methods_for_jni_call.push_back({
+                const_cast<char *>(method_descriptor.name_buffer.data()),
+                const_cast<char *>(method_descriptor.signature_buffer.data()),
+                method_descriptor.fn_ptr
+            });
+        }
+
+        if (jni_methods_for_jni_call.empty())
+        {
+            debug_print_cerr(
+                "No valid methods to register for class '" + klass_name + "' after filtering. Original count: " + std::
+                to_string(methods_vec.size()));
+            return;
+        }
+
+
+        debug_print(
+            "Registering " + std::to_string(jni_methods_for_jni_call.size()) +" native methods for class '" + klass_name
+            + "'");
+
+        const jint register_result = jni->RegisterNatives(klass, jni_methods_for_jni_call.data(),
+                                                    static_cast<jint>(jni_methods_for_jni_call.size()));
+
+        if (register_result != 0)
+        {
+            debug_print_cerr(
+                "JNI RegisterNatives failed for class '" + klass_name + "' with error code: " + std::to_string(
+                    register_result));
+        }
+        else
+        {
+            debug_print(
+                "Successfully registered " + std::to_string(jni_methods_for_jni_call.size()) +
+                " native methods for class '" + klass_name + "'");
+        }
+
+        EXCEPT_CHECK(jni);
+
+        tracked_native_classes[klass_name] = jni_methods_for_jni_call.size();
     }
 }

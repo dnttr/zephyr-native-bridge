@@ -20,7 +20,7 @@ namespace znb_kit
         {
             if (object != nullptr && vm != nullptr)
             {
-                wrapper::add_global_ref(vm->get_env(), object);
+                wrapper::remove_global_ref(vm->get_env(), object);
                 object = nullptr;
             }
         }
@@ -45,6 +45,11 @@ namespace znb_kit
 
             object = wrapper::add_global_ref(env, obj);
             wrapper::remove_local_ref(env, obj);
+        }
+
+        jobject get_object() const
+        {
+            return object;
         }
 
         instance(const instance &other) = delete;
