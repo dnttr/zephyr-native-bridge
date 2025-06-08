@@ -7,6 +7,7 @@
 #include <catch2/catch_all.hpp>
 
 #include "ZNBKit/vm_object.hpp"
+#include "ZNBKit/config.hpp"
 
 inline std::unique_ptr<znb_kit::vm_object> vm = nullptr;
 

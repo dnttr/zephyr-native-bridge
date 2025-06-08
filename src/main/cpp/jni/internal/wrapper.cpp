@@ -174,6 +174,36 @@ namespace znb_kit
         return ref;
     }
 
+    void wrapper::cleanup_all_refs(JNIEnv *jni)
+    {
+        VAR_CHECK(jni);
+
+        std::lock_guard lock(global_tracker::mutex);
+
+        std::vector<jobject> refs_to_delete;
+        refs_to_delete.reserve(global_tracker::global_refs.size());
+
+        for (const jobject& ref : global_tracker::global_refs) {
+            refs_to_delete.push_back(ref);
+        }
+
+        size_t cleanup_count = refs_to_delete.size();
+
+        for (const jobject& ref : refs_to_delete) {
+            try {
+                jni->DeleteGlobalRef(ref);
+            } catch (...) {
+                debug_print_cerr("Exception while deleting global ref during cleanup");
+            }
+        }
+
+        // Clear tracking containers
+        global_tracker::global_refs.clear();
+        global_tracker::global_ref_sources.clear();
+
+        debug_print("Cleaned up " + std::to_string(cleanup_count) + " global references during JVM shutdown");
+    }
+
     void wrapper::remove_global_ref(JNIEnv *jni, const jobject &obj)
     {
         VAR_CHECK(jni);
@@ -449,17 +479,18 @@ namespace znb_kit
         EXCEPT_CHECK(jni);
     }
 
-    void wrapper::unregister_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass)
+    void wrapper::unregister_natives(JNIEnv *jni, const std::string &klass_name)
     {
         VAR_CHECK(jni);
-        VAR_CHECK(klass);
 
         VAR_CONTENT_CHECK(klass_name);
 
+        const auto klass = search_for_class(jni, klass_name, __FILE__, __LINE__, __func__);
         jni->UnregisterNatives(klass);
 
         EXCEPT_CHECK(jni);
 
+        remove_local_ref(jni, klass);
         tracked_native_classes.erase(klass_name);
     }
 

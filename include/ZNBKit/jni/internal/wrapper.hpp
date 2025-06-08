@@ -82,11 +82,11 @@ namespace znb_kit
 
     class global_tracker
     {
+    public:
         static std::mutex mutex;
         static std::unordered_set<jobject> global_refs;
         static std::unordered_map<jobject, ref_info> global_ref_sources;
 
-    public:
         static void add(const jobject &ref, const std::string &file = "", int line = 0, const std::string &method = "");
 
         static void remove(const jobject &ref);
@@ -110,6 +110,8 @@ namespace znb_kit
         static jobject add_global_ref(JNIEnv *jni, const jobject &obj,
                                     const std::string &file = __FILE__, int line = __LINE__,
                                     const std::string &method = __builtin_FUNCTION());
+
+        static void cleanup_all_refs(JNIEnv* jni);
 
         static void remove_local_ref(JNIEnv *jni, const jobject &obj);
 
@@ -154,8 +156,6 @@ namespace znb_kit
 
         static void register_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass, const std::vector<jni_native_method> &methods);
 
-        static void unregister_natives(JNIEnv *jni, const std::string &klass_name, const jclass &klass);
-
-        static std::string obtain_klass_name(JNIEnv *jni, const jclass &klass);
+        static void unregister_natives(JNIEnv *jni, const std::string &klass_name);
     };
 }

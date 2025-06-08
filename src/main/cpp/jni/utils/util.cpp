@@ -80,6 +80,7 @@ namespace znb_kit
 
         for (int i = 0; i < array_size; ++i)
         {
+
             const auto element = env->GetObjectArrayElement(array, i);
 
             EXCEPT_CHECK(env);
@@ -103,17 +104,19 @@ namespace znb_kit
     bool compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2)
     {
         if (v1.size() != v2.size()) {
+            debug_print("Size mismatch: " + std::to_string(v1.size()) + " vs " + std::to_string(v2.size()));
             return false;
         }
 
-        std::unordered_set set(v1.begin(), v1.end());
+        for (size_t i = 0; i < v1.size(); ++i) {
 
-        if (set.size() != v1.size()) {
-            return false;
+            if (v1[i] != v2[i]) {
+                debug_print("Mismatch at position " + std::to_string(i));
+                return false;
+            }
         }
 
-        return std::ranges::all_of(v2, [&set](const std::string &s) {
-            return set.contains(s);
-        });
+        debug_print("[JNI] All parameters match");
+        return true;
     }
 }

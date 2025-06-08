@@ -16,24 +16,20 @@ inline std::string get_path(const std::string& filePath) {
     return "";
 }
 
-#ifdef DEBUG
+template<typename T>
+ const char* to_c_str(const T& msg) {
+    if constexpr (std::is_same_v<T, std::string>) {
+        return msg.c_str();
+    } else {
+        return msg;
+    }
+}
+
 #define debug_print(msg) \
-(std::cout << "[DEBUG] " << get_path(__FILE__) << ":" << __LINE__ << " " << msg << std::endl)
-#else
-#define debug_print(msg) do {} while (0)
-#endif
+printf("[DEBUG] %s:%d %s\n", get_path(__FILE__).c_str(), __LINE__, to_c_str(msg))
 
-#ifdef DEBUG
 #define debug_print_ignore_formatting(msg) \
-(std::cout << "[DEBUG] " << msg << std::endl)
-#else
-#define debug_print_ignore_formatting(msg) do {} while (0)
-#endif
+printf("[DEBUG] %s\n", to_c_str(msg))
 
-#ifdef DEBUG
 #define debug_print_cerr(msg) \
-(std::cerr << "[DEBUG] " << get_path(__FILE__) << ":" << __LINE__ << " " << msg << std::endl)
-#else
-#define debug_print_cerr(msg) do {} while (0)
-#endif
-
+fprintf(stderr, "[DEBUG] %s:%d %s\n", get_path(__FILE__).c_str(), __LINE__, to_c_str(msg))

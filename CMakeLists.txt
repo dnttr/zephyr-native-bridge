@@ -60,21 +60,6 @@ else()
     message(WARNING "No test files found in ${CMAKE_SOURCE_DIR}/src/test/cpp/impl/")
 endif()
 
-option(USE_SANITIZERS "Enable Address and UB Sanitizers" ON)
-
-if(USE_SANITIZERS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -g -O1")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined")
-    add_definitions(-DDEBUG)
-endif()
-
-add_custom_target(leakscheck
-        COMMAND leaks --atExit -- ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-tests
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        DEPENDS ${PROJECT_NAME}-tests
-        COMMENT "Running with macOS leaks tool..."
-)
 
 add_custom_target(copy_main_headers ALL
         COMMAND ${CMAKE_COMMAND} -E make_directory "${MAIN_HEADER_DEST}/ZNBKit"

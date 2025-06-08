@@ -9,7 +9,7 @@
 std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(const std::string &classpath)
 {
     vm_data vm_data;
-    vm_data.version = JNI_VERSION_21;
+    vm_data.version = JNI_VERSION_1_8;
     vm_data.classpath = classpath;
 
     jvmti_data jvmti_data;
@@ -46,13 +46,15 @@ std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(c
 
 std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::wrap_vm(JavaVM *jvm, const std::optional<jvmti_data> jvmti_data)
 {
+    debug_print_ignore_formatting("[VM] Wrapping existing Java Virtual Machine...");
+
     if (jvm == nullptr)
     {
         throw std::invalid_argument("JavaVM is null.");
     }
 
     JNIEnv *jni = nullptr;
-    if (jvm->GetEnv(reinterpret_cast<void **>(&jni), JNI_VERSION_21) != JNI_OK)
+    if (jvm->GetEnv(reinterpret_cast<void **>(&jni), JNI_VERSION_1_8) != JNI_OK)
     {
         throw std::runtime_error("Failed to get JNIEnv from JavaVM.");
     }
@@ -63,7 +65,7 @@ std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::wrap_vm(JavaVM *jvm,
         jvmti = get_jvmti(jvm, jvmti_data.value());
     }
 
-    return std::make_unique<vm_object>(JNI_VERSION_21, jvm, jvmti, jni);
+    return std::make_unique<vm_object>(JNI_VERSION_1_8, jvm, jvmti, jni);
 }
 
 void znb_kit::vm_management::cleanup_vm(JavaVM *vm)
