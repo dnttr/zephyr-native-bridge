@@ -32,6 +32,7 @@ set(SOURCE_FILES
         ${CMAKE_SOURCE_DIR}/src/main/cpp/jvmti/jvmti_factory.cpp
         ${CMAKE_SOURCE_DIR}/src/main/cpp/jni/utils/util.cpp
         ${CMAKE_SOURCE_DIR}/src/main/cpp/jni/internal/wrapper.cpp
+        ${CMAKE_SOURCE_DIR}/src/main/cpp/jni/buffer.cpp
 )
 
 set(TEST_FILES

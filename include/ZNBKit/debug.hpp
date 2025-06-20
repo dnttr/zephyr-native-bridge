@@ -25,8 +25,13 @@ template<typename T>
     }
 }
 
+#ifdef DEBUG
 #define debug_print(msg) \
 printf("[DEBUG] %s:%d %s\n", get_path(__FILE__).c_str(), __LINE__, to_c_str(msg))
+#else
+#define debug_print(msg) \
+printf("[DEBUG] %s\n", to_c_str(msg))
+#endif
 
 #define debug_print_ignore_formatting(msg) \
 printf("[DEBUG] %s\n", to_c_str(msg))

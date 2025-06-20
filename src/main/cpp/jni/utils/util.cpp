@@ -101,22 +101,27 @@ namespace znb_kit
         return methods;
     }
 
-    bool compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2)
+    bool compare_parameters(const std::string &method_name, const std::vector<std::string> &expected, const std::vector<std::string> &probable)
     {
-        if (v1.size() != v2.size()) {
-            debug_print("Size mismatch: " + std::to_string(v1.size()) + " vs " + std::to_string(v2.size()));
+        if (expected.size() != probable.size()) {
+            debug_print("[JNI] For '" + method_name + "' occurred mismatch, with expected size of: " + std::to_string(expected.size()) + " and received " + std::to_string(probable.size()));
+
+            for (const auto& parameter : probable)
+            {
+                debug_print("[JNI] Received parameter: " + parameter);
+            }
+
             return false;
         }
 
-        for (size_t i = 0; i < v1.size(); ++i) {
-
-            if (v1[i] != v2[i]) {
-                debug_print("Mismatch at position " + std::to_string(i));
+        for (size_t i = 0; i < expected.size(); ++i) {
+            if (expected[i] != probable[i]) {
+                debug_print_cerr("[JNI] For '" + method_name + "' occurred a mismatch at position " + std::to_string(i) + " which evaluates to: '" + probable[i] + "' instead of expected '" + expected[i] + "'.");
                 return false;
             }
         }
 
-        debug_print("[JNI] All parameters match");
+        debug_print("[JNI] For method '" + method_name + "' all parameters match, with compared amount of: " + std::to_string(expected.size()) + ".");
         return true;
     }
 }

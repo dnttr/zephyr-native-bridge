@@ -16,7 +16,7 @@ namespace znb_kit
 
     std::vector<std::string> get_parameters(JNIEnv *env, const jobject &method);
 
-    bool compare_parameters(const std::vector<std::string> &v1, const std::vector<std::string> &v2);
+    bool compare_parameters(const std::string &method_name, const std::vector<std::string> &expected, const std::vector<std::string> &probable);
 
     std::vector<jobject> get_methods(JNIEnv *env, const jobject &instance);
 }

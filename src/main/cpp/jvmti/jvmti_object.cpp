@@ -21,16 +21,17 @@ void znb_kit::jvmti_object::report_lacking_methods(std::unordered_multimap<std::
 
         if (it == filtered.end())
         {
-            debug_print("map_methods() was unable to find method: " + name);
+            debug_print_cerr("[JNI] Unable to find method: '" + name + "' in the filtered methods.");
+            debug_print_cerr("[JNI] The method may not have been registered or mapped correctly.");
+            debug_print_cerr("[JNI] Method expects the following parameters:");
 
             if (auto [begin, end] = map.equal_range(name); begin != end)
             {
-                debug_print("map_methods() is expecting parameters:");
                 for (auto p = begin; p != end; ++p)
                 {
                     for (const auto& parameters = p->second.parameters; const auto& parameter : parameters)
                     {
-                        debug_print("Parameter: " + parameter);
+                        debug_print_cerr("[JNI] Parameter: " + parameter);
                     }
                 }
             }

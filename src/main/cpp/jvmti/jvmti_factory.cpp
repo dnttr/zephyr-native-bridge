@@ -171,7 +171,7 @@ namespace znb_kit
                     continue;
                 }
 
-                if (compare_parameters(target_params, probable_match->parameters.value())) {
+                if (compare_parameters(method_name, target_params, probable_match->parameters.value())) {
                     match = std::move(probable_match);
                     break;
                 }
@@ -231,7 +231,7 @@ namespace znb_kit
                     continue;
                 }
 
-                if (!znb_kit::compare_parameters(it->second.parameters, method.parameters.value()))
+                if (!znb_kit::compare_parameters(method.name, it->second.parameters, method.parameters.value()))
                 {
                     continue;
                 }

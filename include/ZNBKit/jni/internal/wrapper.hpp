@@ -30,6 +30,29 @@
 
 namespace znb_kit
 {
+    enum mapping
+    {
+        VOID,
+        STRING,
+        INT,
+        BYTE,
+        LONG,
+        SHORT,
+        FLOAT,
+        DOUBLE,
+        OBJECT,
+        BOOLEAN,
+
+        STRING_ARRAY,
+        INT_ARRAY,
+        BYTE_ARRAY,
+        LONG_ARRAY,
+        SHORT_ARRAY,
+        FLOAT_ARRAY,
+        DOUBLE_ARRAY,
+        OBJECT_ARRAY,
+        BOOLEAN_ARRAY,
+    };
 
     struct ref_info {
         std::string file;
@@ -64,9 +87,81 @@ namespace znb_kit
         std::vector<std::string> parameters;
 
         template <typename Func>
+        [[deprecated("Deprecated constructor. Use either jni_bridge_reference(Func) or jni_bridge_reference(Func, const std::vector<mapping>&) instead.")]]
         jni_bridge_reference(Func f, const std::vector<std::string> &params)
             : func_ptr(reinterpret_cast<void *>(f)),
               parameters(params)
+        {
+        }
+
+        template <typename Func>
+        jni_bridge_reference(Func f, const std::vector<mapping> &params) : func_ptr(reinterpret_cast<void *>(f))
+        {
+            parameters.reserve(params.size());
+
+            for (const auto &param : params)
+            {
+                switch (param)
+                {
+                case VOID:
+                    throw std::invalid_argument("JNI bridge reference cannot have VOID type as a parameter");
+                case STRING:
+                    parameters.emplace_back("java.lang.String");
+                    break;
+                case INT:
+                    parameters.emplace_back("int");
+                    break;
+                case BYTE:
+                    parameters.emplace_back("byte");
+                    break;
+                case LONG:
+                    parameters.emplace_back("long");
+                    break;
+                case SHORT:
+                    parameters.emplace_back("short");
+                    break;
+                case FLOAT:
+                    parameters.emplace_back("float");
+                    break;
+                case DOUBLE:
+                    parameters.emplace_back("double");
+                    break;
+                case OBJECT:
+                    parameters.emplace_back("object");
+                    break;
+                case BOOLEAN:
+                    parameters.emplace_back("boolean");
+                    break;
+                case STRING_ARRAY:
+                    throw std::invalid_argument("Bridge does not support STRING_ARRAY type as a parameter as of now");
+                case INT_ARRAY:
+                    parameters.emplace_back("int[]");
+                    break;
+                case BYTE_ARRAY:
+                    parameters.emplace_back("byte[]");
+                    break;
+                case LONG_ARRAY:
+                    parameters.emplace_back("long[]");
+                    break;
+                case SHORT_ARRAY:
+                    parameters.emplace_back("short[]");
+                    break;
+                case FLOAT_ARRAY:
+                    parameters.emplace_back("float[]");
+                    break;
+                case DOUBLE_ARRAY:
+                    parameters.emplace_back("double[]");
+                    break;
+                case OBJECT_ARRAY:
+                    throw std::invalid_argument("Bridge does not support OBJECT_ARRAY type as a parameter as of now");
+                case BOOLEAN_ARRAY:
+                    break;
+                }
+            }
+        }
+
+        template <typename Func>
+        explicit jni_bridge_reference(Func f) : func_ptr(reinterpret_cast<void *>(f))
         {
         }
 
