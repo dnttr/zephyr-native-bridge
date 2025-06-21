@@ -17,6 +17,7 @@ namespace znb_kit
         jclass owner;
 
         const std::string klass_name;
+
     public:
         klass_signature(JNIEnv *jni, const std::string &klass_name): jni(jni), klass_name(klass_name)
         {
@@ -43,24 +44,34 @@ namespace znb_kit
             }
         }
 
-        klass_signature(const klass_signature& other) : jni(other.jni) {
-            if (other.owner) {
+        klass_signature(const klass_signature &other) : jni(other.jni)
+        {
+            if (other.owner)
+            {
                 owner = reinterpret_cast<jclass>(wrapper::add_global_ref(jni, other.owner));
-            } else {
+            }
+            else
+            {
                 owner = nullptr;
             }
         }
 
-        klass_signature& operator=(const klass_signature& other) {
-            if (this != &other) {
-                if (owner && jni) {
+        klass_signature &operator=(const klass_signature &other)
+        {
+            if (this != &other)
+            {
+                if (owner && jni)
+                {
                     wrapper::remove_global_ref(jni, owner);
                 }
 
                 jni = other.jni;
-                if (other.owner) {
+                if (other.owner)
+                {
                     owner = reinterpret_cast<jclass>(wrapper::add_global_ref(jni, other.owner));
-                } else {
+                }
+                else
+                {
                     owner = nullptr;
                 }
             }

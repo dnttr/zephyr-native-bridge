@@ -14,7 +14,7 @@ namespace znb_kit
     {
     public:
         string_method(JNIEnv *env, const klass_signature &owner, const std::string &name, const std::string &signature,
-            const std::optional<std::vector<std::string>> &parameters, const bool is_static)
+                      const std::optional<std::vector<std::string>> &parameters, const bool is_static)
             : object_method(env, owner, name, signature, parameters, is_static)
         {
         }

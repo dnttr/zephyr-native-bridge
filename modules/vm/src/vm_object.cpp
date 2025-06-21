@@ -17,7 +17,8 @@ JNIEnv *znb_kit::vm_object::get_env() const
         {
             throw std::runtime_error("failed to attach vm thread");
         }
-    } else if (res != JNI_OK)
+    }
+    else if (res != JNI_OK)
     {
         throw std::runtime_error("failed to get JNIEnv");
     }

@@ -4,7 +4,8 @@
 
 #include "ZNBKit/jni/buffer.hpp"
 
-int znb_kit::buffer::set_ptr_long(JNIEnv *env, const jlongArray &buffer, const jlong *array, const int array_length, const int buffer_offset)
+int znb_kit::buffer::set_ptr_long(JNIEnv *env, const jlongArray &buffer, const jlong *array, const int array_length,
+                                  const int buffer_offset)
 {
     const int buffer_length = get_length(env, buffer, array_length, buffer_offset);
     env->SetLongArrayRegion(buffer, buffer_offset, buffer_length, array);
@@ -12,7 +13,8 @@ int znb_kit::buffer::set_ptr_long(JNIEnv *env, const jlongArray &buffer, const j
     return buffer_length;
 }
 
-int znb_kit::buffer::get_ptr_long(JNIEnv *env, const jlongArray &buffer, jlong *array, const int array_length, const int buffer_offset)
+int znb_kit::buffer::get_ptr_long(JNIEnv *env, const jlongArray &buffer, jlong *array, const int array_length,
+                                  const int buffer_offset)
 {
     const int buffer_length = get_length(env, buffer, array_length, buffer_offset);
     env->GetLongArrayRegion(buffer, buffer_offset, buffer_length, array);
@@ -20,7 +22,8 @@ int znb_kit::buffer::get_ptr_long(JNIEnv *env, const jlongArray &buffer, jlong *
     return buffer_length;
 }
 
-int znb_kit::buffer::set_ptr_byte(JNIEnv *env, const jbyteArray &buffer, const int8_t *array, const int array_length, const int buffer_offset)
+int znb_kit::buffer::set_ptr_byte(JNIEnv *env, const jbyteArray &buffer, const int8_t *array, const int array_length,
+                                  const int buffer_offset)
 {
     const int buffer_length = get_length(env, buffer, array_length, buffer_offset);
     env->SetByteArrayRegion(buffer, buffer_offset, buffer_length, array);
@@ -28,7 +31,8 @@ int znb_kit::buffer::set_ptr_byte(JNIEnv *env, const jbyteArray &buffer, const i
     return buffer_length;
 }
 
-int znb_kit::buffer::get_ptr_byte(JNIEnv *env, const jbyteArray &buffer, int8_t *array, const int array_length, const int buffer_offset)
+int znb_kit::buffer::get_ptr_byte(JNIEnv *env, const jbyteArray &buffer, int8_t *array, const int array_length,
+                                  const int buffer_offset)
 {
     const int buffer_length = get_length(env, buffer, array_length, buffer_offset);
     env->GetByteArrayRegion(buffer, buffer_offset, buffer_length, array);
@@ -54,9 +58,3 @@ int znb_kit::buffer::get_length(JNIEnv *env, const jarray &buffer, const int arr
 
     return length;
 }
-
-
-
-
-
-

@@ -39,7 +39,8 @@ namespace znb_kit
 
         static std::unique_ptr<vm_object> create_and_wrap_vm(const std::string &classpath);
 
-        static std::unique_ptr<vm_object> create_and_wrap_vm(const vm_data &vm_data, std::optional<jvmti_data> jvmti_data);
+        static std::unique_ptr<vm_object> create_and_wrap_vm(const vm_data &vm_data,
+                                                             std::optional<jvmti_data> jvmti_data);
 
         static std::unique_ptr<vm_object> wrap_vm(JavaVM *jvm, std::optional<jvmti_data> jvmti_data);
 

@@ -14,14 +14,16 @@ namespace znb_kit
 {
     std::vector<jobject> get_methods(JNIEnv *env, const jobject &instance)
     {
-        const auto method_id = wrapper::get_method(env, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
+        const auto method_id = wrapper::get_method(env, "java/lang/Class", "getDeclaredMethods",
+                                                   "()[Ljava/lang/reflect/Method;", false);
 
         if (method_id == nullptr)
         {
             return {};
         }
 
-        const auto array = reinterpret_cast<jobjectArray>(wrapper::invoke_object_method(env, nullptr, instance, method_id, {}));
+        const auto array = reinterpret_cast<jobjectArray>(wrapper::invoke_object_method(
+            env, nullptr, instance, method_id, {}));
         const auto array_size = env->GetArrayLength(array);
 
         std::vector<jobject> methods(array_size);
@@ -70,22 +72,26 @@ namespace znb_kit
 
     std::vector<std::string> get_parameters(JNIEnv *env, const jobject &instance)
     {
-        const auto getParameterTypes_method_id  = wrapper::get_method(env, "java/lang/reflect/Method", "getParameterTypes", "()[Ljava/lang/Class;", false);
-        const auto getTypeName_method_id = wrapper::get_method(env, "java/lang/Class", "getTypeName", "()Ljava/lang/String;", false);
+        const auto getParameterTypes_method_id = wrapper::get_method(env, "java/lang/reflect/Method",
+                                                                     "getParameterTypes", "()[Ljava/lang/Class;",
+                                                                     false);
+        const auto getTypeName_method_id = wrapper::get_method(env, "java/lang/Class", "getTypeName",
+                                                               "()Ljava/lang/String;", false);
 
-        const auto array = reinterpret_cast<jobjectArray>(wrapper::invoke_object_method(env, nullptr, instance, getParameterTypes_method_id, {}));
+        const auto array = reinterpret_cast<jobjectArray>(wrapper::invoke_object_method(
+            env, nullptr, instance, getParameterTypes_method_id, {}));
         const auto array_size = env->GetArrayLength(array);
 
         std::vector<std::string> methods(array_size);
 
         for (int i = 0; i < array_size; ++i)
         {
-
             const auto element = env->GetObjectArrayElement(array, i);
 
             EXCEPT_CHECK(env);
 
-            const auto jstr = reinterpret_cast<jstring>(wrapper::invoke_object_method(env, nullptr, element, getTypeName_method_id, {}));
+            const auto jstr = reinterpret_cast<jstring>(wrapper::invoke_object_method(
+                env, nullptr, element, getTypeName_method_id, {}));
 
             EXCEPT_CHECK(env);
 
@@ -101,12 +107,16 @@ namespace znb_kit
         return methods;
     }
 
-    bool compare_parameters(const std::string &method_name, const std::vector<std::string> &expected, const std::vector<std::string> &probable)
+    bool compare_parameters(const std::string &method_name, const std::vector<std::string> &expected,
+                            const std::vector<std::string> &probable)
     {
-        if (expected.size() != probable.size()) {
-            debug_print("[JNI] For '" + method_name + "' occurred mismatch, with expected size of: " + std::to_string(expected.size()) + " and received " + std::to_string(probable.size()));
+        if (expected.size() != probable.size())
+        {
+            debug_print(
+                "[JNI] For '" + method_name + "' occurred mismatch, with expected size of: " + std::to_string(expected.
+                    size()) + " and received " + std::to_string(probable.size()));
 
-            for (const auto& parameter : probable)
+            for (const auto &parameter : probable)
             {
                 debug_print("[JNI] Received parameter: " + parameter);
             }
@@ -114,14 +124,21 @@ namespace znb_kit
             return false;
         }
 
-        for (size_t i = 0; i < expected.size(); ++i) {
-            if (expected[i] != probable[i]) {
-                debug_print_cerr("[JNI] For '" + method_name + "' occurred a mismatch at position " + std::to_string(i) + " which evaluates to: '" + probable[i] + "' instead of expected '" + expected[i] + "'.");
+        for (size_t i = 0; i < expected.size(); ++i)
+        {
+            if (expected[i] != probable[i])
+            {
+                debug_print_cerr(
+                    "[JNI] For '" + method_name + "' occurred a mismatch at position " + std::to_string(i) +
+                    " which evaluates to: '" + probable[i] + "' instead of expected '" + expected[i] + "'.");
                 return false;
             }
         }
 
-        debug_print("[JNI] For method '" + method_name + "' all parameters match, with compared amount of: " + std::to_string(expected.size()) + ".");
+        debug_print(
+            "[JNI] All parameters match for '" + method_name + "' with compared amount of: " + std::to_string(expected.
+                size()) + ".");
+
         return true;
     }
 }

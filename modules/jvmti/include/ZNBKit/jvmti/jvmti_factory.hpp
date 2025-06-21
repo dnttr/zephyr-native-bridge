@@ -30,23 +30,24 @@ namespace znb_kit
             const std::string &signature,
             const std::optional<std::vector<std::string>> &params,
             bool is_static);
+
     public:
-        template <class T>
+        template <typename T>
         static std::unique_ptr<method_signature<T>> get_method_signature(
             JNIEnv *jni,
             jvmtiEnv *jvmti,
             const klass_signature &owner_ks,
             const jobject &method);
 
-        template <class T>
+        template <typename T>
         static std::unique_ptr<method_signature<T>> get_method_signature(
             JNIEnv *jni,
             jvmtiEnv *jvmti,
             const klass_signature &owner_ks,
-            const std::string& method_name,
-            const std::vector<std::string>& target_params);
+            const std::string &method_name,
+            const std::vector<std::string> &target_params);
 
-        template <class T>
+        template <typename T>
         static std::vector<std::unique_ptr<method_signature<T>>> look_for_method_signatures(
             JNIEnv *jni,
             jvmtiEnv *jvmti,
@@ -56,5 +57,10 @@ namespace znb_kit
         static std::vector<jni_native_method> map_methods(
             const std::unordered_multimap<std::string, jni_bridge_reference> &map,
             const std::vector<std::unique_ptr<method_signature<T>>> &methods);
+
+        template <typename T>
+        std::unique_ptr<method_signature<T>> get_method_without_signature(JNIEnv *jni, jvmtiEnv *jvmti,
+                                                                          const klass_signature &owner_ks,
+                                                                          const std::string &method_name);
     };
 }

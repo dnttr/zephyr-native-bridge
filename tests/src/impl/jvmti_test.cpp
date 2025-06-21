@@ -17,16 +17,20 @@
 
 using namespace znb_kit;
 
-struct method_proxy_fixture {
+struct method_proxy_fixture
+{
 };
 
-void ffi_example_method() //need to look into whether jobject is needed here, EDIT: turns out not even JNI parameter is needed. interesting, could be useful.
+void ffi_example_method()
+//need to look into whether jobject is needed here, EDIT: turns out not even JNI parameter is needed. interesting, could be useful.
 {
     std::cout << "ffi_zm_open_session called" << std::endl;
 }
 
-TEST_CASE_METHOD(method_proxy_fixture, "JVMTI method mapping", "[jvmti]") {
-    SECTION("Method proxy initialization") {
+TEST_CASE_METHOD(method_proxy_fixture, "JVMTI method mapping", "[jvmti]")
+{
+    SECTION("Method proxy initialization")
+    {
         const auto klass = klass_signature(get_vm()->get_env(), "org/dnttr/zephyr/bridge/Native");
 
         const auto jni_env = vm->get_env();
@@ -39,7 +43,8 @@ TEST_CASE_METHOD(method_proxy_fixture, "JVMTI method mapping", "[jvmti]") {
 
         jvmti_object jvmti(jni_env, jvmti_env);
         const std::unordered_multimap<std::string, jni_bridge_reference> jvm_methods_map = {
-            {"native_method1", jni_bridge_reference(&ffi_example_method)}};
+            {"native_method1", jni_bridge_reference(&ffi_example_method)}
+        };
 
 
         auto mapped = jvmti.try_mapping_methods<void>(klass, jvm_methods_map);
@@ -59,12 +64,14 @@ TEST_CASE_METHOD(method_proxy_fixture, "JVMTI method mapping", "[jvmti]") {
         std::string native_void_name{"native_method1"};
         std::string native_void_signature{"()V"};
 
-        void_method m_v{ get_vm()->get_env(),
-                        klass,
-                        native_void_name,
-                        native_void_signature,
-                        std::nullopt,
-                        false };
+        void_method m_v{
+            get_vm()->get_env(),
+            klass,
+            native_void_name,
+            native_void_signature,
+            std::nullopt,
+            false
+        };
 
         std::vector<jvalue> parameters;
         m_v.invoke(klass_instance.get_object(), parameters);

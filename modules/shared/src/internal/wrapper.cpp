@@ -82,11 +82,14 @@ namespace znb_kit
             {
                 const auto &[file, line, method, details] = info;
 
-                debug_print_cerr(std::format("[WRAPPER] Global ref {} created at {}:{} in {}{}", reinterpret_cast<uintptr_t>(ref), file, line, method, details.empty() ? "" : std::format(" ({}) ", details)));
+                debug_print_cerr(
+                    std::format("[WRAPPER] Global ref {} created at {}:{} in {}{}", reinterpret_cast<uintptr_t>(ref),
+                        file, line, method, details.empty() ? "" : std::format(" ({}) ", details)));
             }
             else
             {
-                debug_print_cerr(std::format("[WRAPPER] Global ref {} (source unknown)", reinterpret_cast<uintptr_t>(ref)));
+                debug_print_cerr(
+                    std::format("[WRAPPER] Global ref {} (source unknown)", reinterpret_cast<uintptr_t>(ref)));
             }
         }
     }
@@ -113,7 +116,8 @@ namespace znb_kit
         {
             debug_print_cerr("[WRAPPER] Warning: References are not empty.");
 
-            debug_print_cerr(std::format("[WRAPPER] Global references count: {}", std::to_string(global_tracker::count())));
+            debug_print_cerr(
+                std::format("[WRAPPER] Global references count: {}", std::to_string(global_tracker::count())));
             debug_print_cerr(std::format("[WRAPPER] Local references count: {}", local_refs.size()));
 
             if (!is_global_empty)
@@ -137,14 +141,15 @@ namespace znb_kit
 
             for (const auto &[name, natives] : tracked_native_classes_copy)
             {
-
-                debug_print_cerr(std::format("[WRAPPER] Class {} has {} references which were not deleted.", name, natives));
+                debug_print_cerr(
+                    std::format("[WRAPPER] Class {} has {} references which were not deleted.", name, natives));
             }
 
             return;
         }
 
-        debug_print_cerr("[WRAPPER] No references left. All good i think, unless not using wrapper, then well, you are on your own. :>");
+        debug_print_cerr(
+            "[WRAPPER] No references left. All good i think, unless not using wrapper, then well, you are on your own. :>");
     }
 
     void wrapper::dump_local_refs()
@@ -159,7 +164,8 @@ namespace znb_kit
                 const auto &[file, line, method, details] = it->second;
 
                 str = std::format("[WRAPPER] Local ref {} created at {}:{} in {}{}",
-                    reinterpret_cast<uintptr_t>(ref), file, line, method, details.empty() ? "" : std::format(" ({}) ", details));
+                                  reinterpret_cast<uintptr_t>(ref), file, line, method,
+                                  details.empty() ? "" : std::format(" ({}) ", details));
             }
             else
             {
@@ -249,7 +255,9 @@ namespace znb_kit
             }
         }
 
-        debug_print(std::format("[WRAPPER] Cleaned up {} global references during JVM shutdown", std::to_string(cleanup_count)));
+        debug_print(
+            std::format("[WRAPPER] Cleaned up {} global references during JVM shutdown", std::to_string(cleanup_count)
+            ));
     }
 
     void wrapper::remove_global_ref(JNIEnv *jni, const jobject &obj)
@@ -282,7 +290,8 @@ namespace znb_kit
 
         local_refs.insert(klass);
 
-        const auto call_site = std::format("Called from {}:{} in {}", get_path(caller_file), caller_line, caller_function);
+        const auto call_site = std::format("Called from {}:{} in {}", get_path(caller_file), caller_line,
+                                           caller_function);
 
         local_ref_sources[klass] = {
             __FILE__,
@@ -575,8 +584,9 @@ namespace znb_kit
 
         if (jni_methods_for_jni_call.empty())
         {
-            message = std::format("[WRAPPER] No valid methods to register for class '{}' after filtering. Original count: {}",
-                                       klass_name, std::to_string(methods_vec.size()));
+            message = std::format(
+                "[WRAPPER] No valid methods to register for class '{}' after filtering. Original count: {}",
+                klass_name, std::to_string(methods_vec.size()));
             debug_print_cerr(message);
 
             return;
@@ -584,11 +594,11 @@ namespace znb_kit
 
 
         message = std::format("[WRAPPER] Registering {} native methods for class '{}'",
-            std::to_string(jni_methods_for_jni_call.size()), klass_name);
+                              std::to_string(jni_methods_for_jni_call.size()), klass_name);
         debug_print(message);
 
         const jint register_result = jni->RegisterNatives(klass, jni_methods_for_jni_call.data(),
-                                                    static_cast<jint>(jni_methods_for_jni_call.size()));
+                                                          static_cast<jint>(jni_methods_for_jni_call.size()));
 
         if (register_result != 0)
         {
@@ -600,7 +610,7 @@ namespace znb_kit
         else
         {
             message = std::format("[WRAPPER] Successfully registered {} native methods for class '{}'",
-                std::to_string(jni_methods_for_jni_call.size()), klass_name);
+                                  std::to_string(jni_methods_for_jni_call.size()), klass_name);
 
             debug_print(message);
         }

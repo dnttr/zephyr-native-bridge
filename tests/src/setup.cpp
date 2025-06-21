@@ -7,7 +7,8 @@
 
 using namespace znb_kit;
 
-int main(const int argc, char* argv[]) {
+int main(const int argc, char *argv[])
+{
     Catch::Session session;
 
     debug_print_ignore_formatting("--------> RUNNING TESTS <--------");

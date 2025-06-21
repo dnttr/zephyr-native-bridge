@@ -12,7 +12,8 @@
 
 namespace znb_kit
 {
-    class instance {
+    class instance
+    {
         jobject object{nullptr};
         vm_object *vm{nullptr};
 
@@ -26,19 +27,21 @@ namespace znb_kit
         }
 
     public:
-
-        explicit instance(vm_object *vm, const void_method &method_signature, const std::vector<jvalue> &parameters): vm(vm)
+        explicit instance(vm_object *vm, const void_method &method_signature,
+                          const std::vector<jvalue> &parameters): vm(vm)
         {
             if (vm == nullptr)
             {
                 throw std::invalid_argument("vm cannot be null");
             }
 
-            JNIEnv* env = vm->get_env();
+            JNIEnv *env = vm->get_env();
 
-            const auto obj = env->NewObjectA(method_signature.get_owner(), method_signature.get_identity(), parameters.data());
+            const auto obj = env->NewObjectA(method_signature.get_owner(), method_signature.get_identity(),
+                                             parameters.data());
 
-            if (obj == nullptr) {
+            if (obj == nullptr)
+            {
                 env->ExceptionClear();
                 throw std::runtime_error("Unable to create new instance");
             }
@@ -53,7 +56,7 @@ namespace znb_kit
         }
 
         instance(const instance &other) = delete;
-        instance& operator=(const instance &other) = delete;
+        instance &operator=(const instance &other) = delete;
 
         instance(instance &&other) noexcept: object(std::exchange(other.object, nullptr)), vm(other.vm)
         {

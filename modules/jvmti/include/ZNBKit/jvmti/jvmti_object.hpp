@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "ZNBKit/debug.hpp"
 #include "ZNBKit/jvmti/jvmti_factory.hpp"
 
 namespace znb_kit
@@ -23,8 +24,11 @@ namespace znb_kit
         static void report_lacking_methods(std::unordered_multimap<std::string, jni_bridge_reference>,
                                            std::vector<jni_native_method> &filtered);
 
-        template<typename T>
-        struct type_tag { using type = T; };
+        template <typename T>
+        struct type_tag
+        {
+            using type = T;
+        };
 
     public:
         explicit jvmti_object(JNIEnv *new_jni, jvmtiEnv *new_jvmti): jvmti(new_jvmti), jni(new_jni)
@@ -63,13 +67,22 @@ namespace znb_kit
             const std::unordered_multimap<std::string, jni_bridge_reference> &map)
         {
             const auto methods = jvmti_factory::look_for_method_signatures<T>(this->jni, this->jvmti, klass_signature);
+
             auto filtered_mappings = jvmti_factory::map_methods(map, methods);
             size_t size = filtered_mappings.size();
 
             if (size != map.size())
             {
+                debug_print_cerr(
+                    "[FACTORY] The amount of methods mapped is not equal to the amount of methods requested.");
+
                 report_lacking_methods(map, filtered_mappings);
             }
+            else
+            {
+                debug_print("[FACTORY] The amount of methods mapped is equal to the amount of methods requested.");
+            }
+
             return std::make_pair(filtered_mappings, size);
         }
 
@@ -81,18 +94,27 @@ namespace znb_kit
             std::vector<jni_native_method> mapped_methods;
             size_t total = 0;
 
-            (void([&]<typename T0>([[maybe_unused]] T0 id) {
-              using CurrentType = typename T0::type;
-              auto pair_result = this->create_mappings<CurrentType>(klass_signature, map);
-              mapped_methods.insert(mapped_methods.end(), pair_result.first.begin(), pair_result.first.end());
-              total += pair_result.second;
-          }(type_tag<Ts>{})), ...);
+            (void([&]<typename T0>([[maybe_unused]] T0 id)
+            {
+                using CurrentType = typename T0::type;
+                auto pair_result = this->create_mappings<CurrentType>(klass_signature, map);
+                mapped_methods.insert(mapped_methods.end(), pair_result.first.begin(), pair_result.first.end());
+                total += pair_result.second;
+            }(type_tag<Ts>{})), ...);
 
 
             return {mapped_methods, total};
         }
 
         [[nodiscard]] jvmtiEnv *get_owner() const { return jvmti; }
+
+        //if no specific needed
+        std::pair<std::vector<jni_native_method>, size_t> try_mapping_methods(
+            const klass_signature &klass_signature,
+            const std::unordered_multimap<std::string, jni_bridge_reference> &map)
+        {
+            return create_mappings<void>(klass_signature, map);
+        }
     };
 }
 

@@ -12,12 +12,14 @@
 
 namespace znb_kit
 {
-    class vm_object {
+    class vm_object
+    {
         JavaVM *jvm;
         std::optional<jvmti_object> jvmti;
         JNIEnv *jni;
 
         int version;
+
     public:
         vm_object(const int version, JavaVM *jvm, jvmtiEnv *jvmti_env, JNIEnv *jni):
             version(version),
@@ -29,7 +31,8 @@ namespace znb_kit
                 throw std::invalid_argument("jvm or jni is null");
             }
 
-            if (jvmti_env != nullptr) {
+            if (jvmti_env != nullptr)
+            {
                 jvmti.emplace(jni, jvmti_env);
             }
         }

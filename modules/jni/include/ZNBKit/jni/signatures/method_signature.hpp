@@ -30,20 +30,24 @@ namespace znb_kit
         {
             if (env == nullptr)
             {
-                throw std::runtime_error("method_signature::build_identity: jni is null for method '" + name + "' with signature '" + signature + "'");
+                throw std::runtime_error(
+                    "method_signature::build_identity: jni is null for method '" + name + "' with signature '" +
+                    signature + "'");
             }
 
             const auto klass = owner.get_owner();
 
             if (klass == nullptr)
             {
-                throw std::runtime_error("method_signature::build_identity: owner->get_owner() returned null jclass for method '" + name + "' with signature '" + signature + "' (declaring class: unknown)");
+                throw std::runtime_error(
+                    "method_signature::build_identity: owner->get_owner() returned null jclass for method '" + name +
+                    "' with signature '" + signature + "' (declaring class: unknown)");
             }
 
             return wrapper::get_method(env, klass, name, signature, this->is_static);
         }
-    public:
 
+    public:
         const std::string name;
         const std::string signature;
 
@@ -51,7 +55,8 @@ namespace znb_kit
 
         virtual ~method_signature() = default;
 
-        method_signature(JNIEnv *env, const klass_signature& owner, std::string name, std::string signature, std::optional<std::vector<std::string>> parameters, const bool is_static)
+        method_signature(JNIEnv *env, const klass_signature &owner, std::string name, std::string signature,
+                         std::optional<std::vector<std::string>> parameters, const bool is_static)
             :
             env(env),
             owner(owner),
