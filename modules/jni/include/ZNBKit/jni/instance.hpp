@@ -7,8 +7,8 @@
 #include <jni.h>
 #include <stdexcept>
 
-#include "../../../../vm/include/ZNBKit/vm/vm_object.hpp"
 #include "ZNBKit/jni/signatures/method/void_method.hpp"
+#include "ZNBKit/vm/vm_object.hpp"
 
 namespace znb_kit
 {

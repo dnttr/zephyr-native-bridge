@@ -6,7 +6,7 @@
 
 #include <vector>
 
-#include "../../include/ZNBKit/debug.hpp"
+#include "ZNBKit/debug.hpp"
 
 namespace znb_kit
 {

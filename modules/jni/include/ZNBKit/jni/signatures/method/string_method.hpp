@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include "ZNBKit/internal/util.hpp"
 #include "ZNBKit/internal/wrapper.hpp"
 #include "ZNBKit/jni/signatures/method/object_method.hpp"
-#include "ZNBKit/internal/util.hpp"
 
 namespace znb_kit
 {

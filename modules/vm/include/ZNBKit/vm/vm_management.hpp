@@ -10,7 +10,7 @@
 #include <optional>
 #include <string>
 
-#include "vm_object.hpp"
+#include "ZNBKit/vm/vm_object.hpp"
 
 namespace znb_kit
 {

@@ -2,9 +2,9 @@
 // Created by Damian Netter on 12/05/2025.
 //
 
-#include "../include/ZNBKit/vm/vm_management.hpp"
+#include "ZNBKit/vm/vm_management.hpp"
 
-#include "../../shared/include/ZNBKit/debug.hpp"
+#include "ZNBKit/debug.hpp"
 
 std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(const std::string &classpath)
 {

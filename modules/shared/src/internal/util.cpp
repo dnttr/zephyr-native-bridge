@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "../../include/ZNBKit/debug.hpp"
+#include "ZNBKit/debug.hpp"
 #include "ZNBKit/internal/wrapper.hpp"
 
 namespace znb_kit

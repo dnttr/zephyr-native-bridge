@@ -4,15 +4,14 @@
 
 #include "ZNBKit/jvmti/jvmti_factory.hpp"
 
+#include "ZNBKit/debug.hpp"
+#include "ZNBKit/internal/util.hpp"
 #include "ZNBKit/jni/signatures/method/byte_method.hpp"
 #include "ZNBKit/jni/signatures/method/int_method.hpp"
 #include "ZNBKit/jni/signatures/method/long_method.hpp"
 #include "ZNBKit/jni/signatures/method/object_method.hpp"
 #include "ZNBKit/jni/signatures/method/short_method.hpp"
 #include "ZNBKit/jni/signatures/method/void_method.hpp"
-
-#include "../../shared/include/ZNBKit/debug.hpp"
-#include "ZNBKit/internal/util.hpp"
 
 /*
  * For now include all JNI types here. It probably isn't good idea to include all of them until they're all implemented but who cares.

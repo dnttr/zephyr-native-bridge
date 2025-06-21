@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+
 #include "ZNBKit/setup.hpp"
 
 TEST_CASE("javavm internal methods availability")
