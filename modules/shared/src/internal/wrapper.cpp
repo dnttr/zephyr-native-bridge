@@ -603,7 +603,7 @@ namespace znb_kit
         if (register_result != 0)
         {
             message = std::format(
-                "[WRAPPER] RegisterNatives failed for class '{}' with error code: {}", klass_name, register_result);
+                "[WRAPPER] Failed to register methods for class '{}' with error code: {}", klass_name, register_result);
 
             debug_print_cerr(message);
         }

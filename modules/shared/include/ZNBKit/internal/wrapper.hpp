@@ -91,7 +91,7 @@ namespace znb_kit
 
         template <typename Func>
         [[deprecated(
-            "Deprecated constructor. Use either jni_bridge_reference(Func) or jni_bridge_reference(Func, const std::vector<mapping>&) instead."
+            "Use either jni_bridge_reference(Func) or jni_bridge_reference(Func, const std::vector<mapping>&) instead."
         )]]
         jni_bridge_reference(Func f, const std::vector<std::string> &params)
             : func_ptr(reinterpret_cast<void *>(f)),
