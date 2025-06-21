@@ -4,125 +4,71 @@ project(zephyr-native-bridge LANGUAGES C CXX)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-diagnostics-show-template-tree")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU") # For GCC
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
 endif()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(${CMAKE_SOURCE_DIR}/tools/Platform.cmake)
-include(${CMAKE_SOURCE_DIR}/tools/Dependencies.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/Platform.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/Dependencies.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/TargetConfig.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/Test.cmake)
 
-set(MAIN_HEADER_DEST "${CMAKE_BINARY_DIR}/include")
-set(TEST_HEADER_DEST "${CMAKE_BINARY_DIR}/test_include")
-
-file(MAKE_DIRECTORY ${MAIN_HEADER_DEST})
-file(MAKE_DIRECTORY ${TEST_HEADER_DEST})
-
-file(GLOB_RECURSE MAIN_HEADER_FILES "${CMAKE_SOURCE_DIR}/include/*.hpp")
-file(GLOB_RECURSE TEST_HEADER_FILES "${CMAKE_SOURCE_DIR}/src/test/include/*.hpp")
-
-file(GLOB_RECURSE TEST_LIST "${CMAKE_SOURCE_DIR}/src/test/cpp/impl/*.cpp")
-
-set(SOURCE_FILES
-        ${CMAKE_SOURCE_DIR}/src/main/cpp/vm_object.cpp
-        ${CMAKE_SOURCE_DIR}/src/main/cpp/vm_management.cpp
-        ${CMAKE_SOURCE_DIR}/src/main/cpp/jvmti/jvmti_object.cpp
-        ${CMAKE_SOURCE_DIR}/src/main/cpp/jvmti/jvmti_factory.cpp
-        ${CMAKE_SOURCE_DIR}/src/main/cpp/jni/utils/util.cpp
-        ${CMAKE_SOURCE_DIR}/src/main/cpp/jni/internal/wrapper.cpp
-        ${CMAKE_SOURCE_DIR}/src/main/cpp/jni/buffer.cpp
+file(GLOB_RECURSE ALL_SOURCES
+        "${CMAKE_SOURCE_DIR}/modules/jni/src/*.cpp"
+        "${CMAKE_SOURCE_DIR}/modules/jvmti/src/*.cpp"
+        "${CMAKE_SOURCE_DIR}/modules/shared/src/*.cpp"
+        "${CMAKE_SOURCE_DIR}/modules/vm/src/*.cpp"
 )
 
-set(TEST_FILES
-        ${CMAKE_SOURCE_DIR}/src/test/cpp/setup.cpp
+add_library(${PROJECT_NAME} SHARED ${ALL_SOURCES})
+
+set(PROJECT_INCLUDES
+        ${CMAKE_SOURCE_DIR}/modules/vm/include
+        ${CMAKE_SOURCE_DIR}/modules/jni/include
+        ${CMAKE_SOURCE_DIR}/modules/jvmti/include
+        ${CMAKE_SOURCE_DIR}/modules/shared/include
 )
 
-look_for_interface()
-define_platform()
-
-add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
-
-target_include_directories(${PROJECT_NAME}
-        PUBLIC
+set(COLLECTED_INCLUDES
         ${CMAKE_SOURCE_DIR}/include
-        ${MAIN_HEADER_DEST}
+        ${CMAKE_SOURCE_DIR}/extern/include
+        ${COMMON_INCLUDE_DIRS}
+        ${PROJECT_INCLUDES}
 )
 
-add_dependencies(${PROJECT_NAME} copy_main_headers)
 
-if(TEST_LIST)
-    message(STATUS "Found test files:")
-    foreach(file ${TEST_LIST})
-        message(STATUS "  ${file}")
-    endforeach()
-else()
-    message(WARNING "No test files found in ${CMAKE_SOURCE_DIR}/src/test/cpp/impl/")
-endif()
+set(COLLECTED_INCLUDES_DESTINATION "${CMAKE_BINARY_DIR}/include")
 
+target_include_directories(${PROJECT_NAME} PUBLIC ${COLLECTED_INCLUDES} ${PROJECT_INCLUDES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${COMMON_LIBS})
 
-add_custom_target(copy_main_headers ALL
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${MAIN_HEADER_DEST}/ZNBKit"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/include"
-        "${MAIN_HEADER_DEST}/ZNBKit"
-        DEPENDS ${MAIN_HEADER_FILES}
-        COMMENT "Copying main headers to build directory"
+configure_tests()
+
+file(MAKE_DIRECTORY ${COLLECTED_INCLUDES_DESTINATION})
+
+add_custom_target(copy_includes ALL
+        COMMENT "Copying all include files to a single directory"
 )
 
-add_custom_target(copy_test_headers ALL
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${TEST_HEADER_DEST}"
-        COMMAND ${CMAKE_COMMAND}
-        -DSOURCE_DIR="${CMAKE_SOURCE_DIR}/src/test/include"
-        -DDEST_DIR="${TEST_HEADER_DEST}"
-        -P "${CMAKE_SOURCE_DIR}/tools/Copy.cmake"
-        DEPENDS ${TEST_HEADER_FILES}
-        COMMENT "Copying test headers to build directory (excluding config.hpp)"
+foreach(INCLUDE_DIR ${PROJECT_INCLUDES})
+    if(EXISTS ${INCLUDE_DIR} AND NOT ${INCLUDE_DIR} MATCHES "^${CMAKE_BINARY_DIR}")
+        add_custom_command(
+                TARGET copy_includes
+                POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E echo "Copying ${INCLUDE_DIR} to ${COLLECTED_INCLUDES_DESTINATION}"
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${INCLUDE_DIR} ${COLLECTED_INCLUDES_DESTINATION}
+        )
+    endif()
+endforeach()
+
+add_custom_command(
+        TARGET copy_includes
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo "All includes copied to ${COLLECTED_INCLUDES_DESTINATION}"
 )
-
-add_custom_target(process_config ALL
-        COMMAND ${CMAKE_COMMAND} -E echo "Processing config.hpp with ZNI_DST=${ZNI_DST}"
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${TEST_HEADER_DEST}/ZNBKit"
-        COMMAND ${CMAKE_COMMAND}
-        -DSOURCE_FILE="${CMAKE_SOURCE_DIR}/src/test/include/ZNBKit/config.hpp"
-        -DDEST_FILE="${TEST_HEADER_DEST}/ZNBKit/config.hpp"
-        -DZNI_DST="${ZNI_DST}"
-        -P "${CMAKE_SOURCE_DIR}/tools/Config.cmake"
-        COMMENT "Configuring test config.hpp with ZNI_DST path"
-)
-
-add_executable(${PROJECT_NAME}-tests ${TEST_FILES} ${TEST_LIST})
-
-prepare_dependencies()
-enable_testing()
-
-add_dependencies(process_config copy_test_headers)
-add_dependencies(${PROJECT_NAME}-tests copy_main_headers process_config)
-
-target_include_directories(${PROJECT_NAME}-tests
-        PRIVATE
-        ${MAIN_HEADER_DEST}
-        ${TEST_HEADER_DEST}
-        ${CMAKE_SOURCE_DIR}/include/private
-)
-
-target_link_libraries(${PROJECT_NAME}-tests PUBLIC ${PROJECT_NAME} ${LIB_LIST})
-
-add_test(NAME run_all_tests
-        COMMAND ${CMAKE_COMMAND} -E env
-        JAVA_TOOLSET=${JAVA_TEST_TOOLSET}
-        java -jar ${ZNI_DST} --library-path=${CMAKE_BINARY_DIR}
-        && ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-tests)
-
-install(TARGETS ${PROJECT_NAME}
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin)
-
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.hpp")
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
