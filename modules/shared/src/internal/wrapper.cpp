@@ -5,12 +5,15 @@
 #include "ZNBKit/internal/wrapper.hpp"
 
 #include <vector>
+#include <cassert>
 
 #include "ZNBKit/debug.hpp"
 
 namespace znb_kit
 {
     std::mutex global_tracker::mutex;
+    std::mutex wrapper::tracked_native_classes_mutex;
+
     std::unordered_set<jobject> global_tracker::global_refs;
     std::unordered_map<jobject, ref_info> global_tracker::global_ref_sources;
 
@@ -42,22 +45,48 @@ namespace znb_kit
 
     void global_tracker::dump_refs()
     {
-        std::lock_guard lock(mutex);
-        debug_print_cerr("Dumping " + std::to_string(global_refs.size()) + " global references:");
+        using ref_data = std::pair<jobject, ref_info>;
+        std::vector<ref_data> refs_to_dump;
+        size_t total_refs;
 
-        for (const auto &ref : global_refs)
         {
-            if (auto it = global_ref_sources.find(ref); it != global_ref_sources.end())
+            std::lock_guard lock(mutex);
+
+            total_refs = global_refs.size();
+
+            if (total_refs == 0)
             {
-                const auto &info = it->second;
-                debug_print_cerr("Global ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                    " created at " + info.file + ":" + std::to_string(info.line) +
-                    " in " + info.method);
+                return;
+            }
+
+            refs_to_dump.reserve(total_refs);
+
+            for (const auto &ref : global_refs)
+            {
+                if (auto it = global_ref_sources.find(ref); it != global_ref_sources.end())
+                {
+                    refs_to_dump.emplace_back(ref, it->second);
+                }
+                else
+                {
+                    refs_to_dump.emplace_back(ref, ref_info{});
+                }
+            }
+        }
+
+        debug_print_cerr(std::format("[WRAPPER] Dumping {} global references:", total_refs));
+
+        for (const auto &[ref, info] : refs_to_dump)
+        {
+            if (!info.file.empty())
+            {
+                const auto &[file, line, method, details] = info;
+
+                debug_print_cerr(std::format("[WRAPPER] Global ref {} created at {}:{} in {}{}", reinterpret_cast<uintptr_t>(ref), file, line, method, details.empty() ? "" : std::format(" ({}) ", details)));
             }
             else
             {
-                debug_print_cerr("Global ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                    " (source unknown)");
+                debug_print_cerr(std::format("[WRAPPER] Global ref {} (source unknown)", reinterpret_cast<uintptr_t>(ref)));
             }
         }
     }
@@ -66,24 +95,36 @@ namespace znb_kit
     {
         const bool is_global_empty = global_tracker::count() == 0;
         const bool is_local_empty = local_refs.empty();
-        const bool are_natives_empty = tracked_native_classes.empty();
+
+        bool are_natives_empty;
+
+        std::vector<std::pair<std::string, size_t>> tracked_native_classes_copy;
+        {
+            std::lock_guard lock(tracked_native_classes_mutex);
+            are_natives_empty = tracked_native_classes.empty();
+
+            if (!are_natives_empty)
+            {
+                tracked_native_classes_copy.assign(tracked_native_classes.begin(), tracked_native_classes.end());
+            }
+        }
 
         if (!is_global_empty || !is_local_empty)
         {
-            debug_print_cerr("Warning: References are not empty.");
+            debug_print_cerr("[WRAPPER] Warning: References are not empty.");
 
-            debug_print_cerr("Global references count: " + std::to_string(global_tracker::count()));
-            debug_print_cerr("Local references count: " + std::to_string(local_refs.size()));
+            debug_print_cerr(std::format("[WRAPPER] Global references count: {}", std::to_string(global_tracker::count())));
+            debug_print_cerr(std::format("[WRAPPER] Local references count: {}", local_refs.size()));
 
             if (!is_global_empty)
             {
-                debug_print_cerr("Global references are not empty, potential memory leak detected.");
+                debug_print_cerr("[WRAPPER] Global references are not empty, potential memory leak detected.");
                 global_tracker::dump_refs();
             }
 
             if (!is_local_empty)
             {
-                debug_print_cerr("Local references are not empty, potential memory leak detected.");
+                debug_print_cerr("[WRAPPER] Local references are not empty, potential memory leak detected.");
                 dump_local_refs();
             }
 
@@ -92,40 +133,40 @@ namespace znb_kit
 
         if (!are_natives_empty)
         {
-            debug_print_cerr("Warning: Tracked native classes are not empty. ");
+            debug_print_cerr("[WRAPPER] Warning: Tracked native classes are not empty.");
 
-            for (const auto &[name, natives] : tracked_native_classes)
+            for (const auto &[name, natives] : tracked_native_classes_copy)
             {
-                debug_print_cerr(
-                    "Class " + name + " has " + std::to_string(natives) + " references which were not deleted.");
+
+                debug_print_cerr(std::format("[WRAPPER] Class {} has {} references which were not deleted.", name, natives));
             }
 
             return;
         }
 
-        debug_print_cerr(
-            "No references left. All good i think, unless not using wrapper, then well, you are on your own. :>");
+        debug_print_cerr("[WRAPPER] No references left. All good i think, unless not using wrapper, then well, you are on your own. :>");
     }
 
     void wrapper::dump_local_refs()
     {
-        debug_print_cerr("Dumping " + std::to_string(local_refs.size()) + " local references:");
+        auto str = std::format("[WRAPPER] Dumping {} local references:", local_refs.size());
+        debug_print_cerr(str);
+
         for (const auto &ref : local_refs)
         {
-            auto it = local_ref_sources.find(ref);
-            if (it != local_ref_sources.end())
+            if (auto it = local_ref_sources.find(ref); it != local_ref_sources.end())
             {
-                const auto &info = it->second;
-                debug_print_cerr("Local ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                    " created at " + info.file + ":" + std::to_string(info.line) +
-                    " in " + info.method +
-                    (info.details.empty() ? "" : " (" + info.details + ")"));
+                const auto &[file, line, method, details] = it->second;
+
+                str = std::format("[WRAPPER] Local ref {} created at {}:{} in {}{}",
+                    reinterpret_cast<uintptr_t>(ref), file, line, method, details.empty() ? "" : std::format(" ({}) ", details));
             }
             else
             {
-                debug_print_cerr("Local ref " + std::to_string(reinterpret_cast<uintptr_t>(ref)) +
-                    " (source unknown)");
+                str = std::format("[WRAPPER] Local ref {} (source unknown)", reinterpret_cast<uintptr_t>(ref));
             }
+
+            debug_print_cerr(str);
         }
     }
 
@@ -178,30 +219,37 @@ namespace znb_kit
     {
         VAR_CHECK(jni);
 
-        std::lock_guard lock(global_tracker::mutex);
-
         std::vector<jobject> refs_to_delete;
-        refs_to_delete.reserve(global_tracker::global_refs.size());
+        {
+            std::lock_guard lock(global_tracker::mutex);
 
-        for (const jobject& ref : global_tracker::global_refs) {
-            refs_to_delete.push_back(ref);
+            refs_to_delete.assign(global_tracker::global_refs.begin(), global_tracker::global_refs.end());
+
+            global_tracker::global_refs.clear();
+            global_tracker::global_ref_sources.clear();
         }
 
-        size_t cleanup_count = refs_to_delete.size();
+        const size_t cleanup_count = refs_to_delete.size();
 
-        for (const jobject& ref : refs_to_delete) {
-            try {
+        if (cleanup_count == 0)
+        {
+            debug_print("[WRAPPER] No global references to clean up during JVM shutdown.");
+            return;
+        }
+
+        for (const jobject &ref : refs_to_delete)
+        {
+            try
+            {
                 jni->DeleteGlobalRef(ref);
-            } catch (...) {
+            }
+            catch (...)
+            {
                 debug_print_cerr("Exception while deleting global ref during cleanup");
             }
         }
 
-        // Clear tracking containers
-        global_tracker::global_refs.clear();
-        global_tracker::global_ref_sources.clear();
-
-        debug_print("Cleaned up " + std::to_string(cleanup_count) + " global references during JVM shutdown");
+        debug_print(std::format("[WRAPPER] Cleaned up {} global references during JVM shutdown", std::to_string(cleanup_count)));
     }
 
     void wrapper::remove_global_ref(JNIEnv *jni, const jobject &obj)
@@ -234,8 +282,7 @@ namespace znb_kit
 
         local_refs.insert(klass);
 
-        std::string call_site = "Called from " + get_path(caller_file) + ":" +
-            std::to_string(caller_line) + " in " + caller_function;
+        const auto call_site = std::format("Called from {}:{} in {}", get_path(caller_file), caller_line, caller_function);
 
         local_ref_sources[klass] = {
             __FILE__,
@@ -295,9 +342,8 @@ namespace znb_kit
         VAR_CHECK(jni);
 
         jobject result;
-        const bool is_static = klass != nullptr;
 
-        if (is_static)
+        if (klass != nullptr)
         {
             result = jni->CallStaticObjectMethodA(klass, method_id, parameters.data());
         }
@@ -319,9 +365,8 @@ namespace znb_kit
         VAR_CHECK(jni);
 
         jbyte result;
-        const bool is_static = klass != nullptr;
 
-        if (is_static)
+        if (klass != nullptr)
         {
             result = jni->CallStaticByteMethodA(klass, method_id, parameters.data());
         }
@@ -344,9 +389,8 @@ namespace znb_kit
         VAR_CHECK(jni);
 
         jint result;
-        const bool is_static = klass != nullptr;
 
-        if (is_static)
+        if (klass != nullptr)
         {
             result = jni->CallStaticIntMethodA(klass, method_id, parameters.data());
         }
@@ -368,9 +412,8 @@ namespace znb_kit
         VAR_CHECK(jni);
 
         jlong result;
-        const bool is_static = klass != nullptr;
 
-        if (is_static)
+        if (klass != nullptr)
         {
             result = jni->CallStaticLongMethodA(klass, method_id, parameters.data());
         }
@@ -392,9 +435,8 @@ namespace znb_kit
         VAR_CHECK(jni);
 
         jshort result;
-        const bool is_static = klass != nullptr;
 
-        if (is_static)
+        if (klass != nullptr)
         {
             result = jni->CallStaticShortMethodA(klass, method_id, parameters.data());
         }
@@ -416,9 +458,8 @@ namespace znb_kit
         VAR_CHECK(jni);
 
         jfloat result;
-        const bool is_static = klass != nullptr;
 
-        if (is_static)
+        if (klass != nullptr)
         {
             result = jni->CallStaticFloatMethodA(klass, method_id, parameters.data());
         }
@@ -440,9 +481,8 @@ namespace znb_kit
         VAR_CHECK(jni);
 
         jdouble result;
-        const bool is_static = klass != nullptr;
 
-        if (is_static)
+        if (klass != nullptr)
         {
             result = jni->CallStaticDoubleMethodA(klass, method_id, parameters.data());
         }
@@ -463,9 +503,8 @@ namespace znb_kit
                                      const std::vector<jvalue> &parameters)
     {
         VAR_CHECK(jni);
-        const bool is_static = klass != nullptr;
 
-        if (is_static)
+        if (klass != nullptr)
         {
             jni->CallStaticVoidMethodA(klass, method_id, parameters.data());
         }
@@ -491,6 +530,8 @@ namespace znb_kit
         EXCEPT_CHECK(jni);
 
         remove_local_ref(jni, klass);
+
+        std::lock_guard lock(tracked_native_classes_mutex);
         tracked_native_classes.erase(klass_name);
     }
 
@@ -503,7 +544,7 @@ namespace znb_kit
 
         if (methods_vec.empty())
         {
-            debug_print_cerr("No methods to register for class " + klass_name);
+            debug_print_cerr("[WRAPPER] No methods to register for class " + klass_name);
             return;
         }
 
@@ -517,7 +558,7 @@ namespace znb_kit
                 !method_descriptor.fn_ptr)
             {
                 debug_print_cerr(
-                    "Skipping registration of invalid method for class '" + klass_name +
+                    "[WRAPPER] Skipping registration of invalid method for class '" + klass_name +
                     "': Name empty or invalid, Sig empty or invalid, or Func ptr null.");
 
                 continue;
@@ -530,37 +571,43 @@ namespace znb_kit
             });
         }
 
+        std::string message;
+
         if (jni_methods_for_jni_call.empty())
         {
-            debug_print_cerr(
-                "No valid methods to register for class '" + klass_name + "' after filtering. Original count: " + std::
-                to_string(methods_vec.size()));
+            message = std::format("[WRAPPER] No valid methods to register for class '{}' after filtering. Original count: {}",
+                                       klass_name, std::to_string(methods_vec.size()));
+            debug_print_cerr(message);
+
             return;
         }
 
 
-        debug_print(
-            "Registering " + std::to_string(jni_methods_for_jni_call.size()) +" native methods for class '" + klass_name
-            + "'");
+        message = std::format("[WRAPPER] Registering {} native methods for class '{}'",
+            std::to_string(jni_methods_for_jni_call.size()), klass_name);
+        debug_print(message);
 
         const jint register_result = jni->RegisterNatives(klass, jni_methods_for_jni_call.data(),
                                                     static_cast<jint>(jni_methods_for_jni_call.size()));
 
         if (register_result != 0)
         {
-            debug_print_cerr(
-                "JNI RegisterNatives failed for class '" + klass_name + "' with error code: " + std::to_string(
-                    register_result));
+            message = std::format(
+                "[WRAPPER] RegisterNatives failed for class '{}' with error code: {}", klass_name, register_result);
+
+            debug_print_cerr(message);
         }
         else
         {
-            debug_print(
-                "Successfully registered " + std::to_string(jni_methods_for_jni_call.size()) +
-                " native methods for class '" + klass_name + "'");
+            message = std::format("[WRAPPER] Successfully registered {} native methods for class '{}'",
+                std::to_string(jni_methods_for_jni_call.size()), klass_name);
+
+            debug_print(message);
         }
 
         EXCEPT_CHECK(jni);
 
+        std::lock_guard lock(tracked_native_classes_mutex);
         tracked_native_classes[klass_name] = jni_methods_for_jni_call.size();
     }
 }

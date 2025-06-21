@@ -194,6 +194,7 @@ namespace znb_kit
     class wrapper
     {
         static std::unordered_map<std::string, size_t> tracked_native_classes;
+        static std::mutex tracked_native_classes_mutex;
 
     public:
         static void check_for_corruption();

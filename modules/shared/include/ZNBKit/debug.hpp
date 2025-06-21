@@ -36,5 +36,10 @@ printf("[DEBUG] %s\n", to_c_str(msg))
 #define debug_print_ignore_formatting(msg) \
 printf("[DEBUG] %s\n", to_c_str(msg))
 
+#ifdef SHOULD_DISPLAY
 #define debug_print_cerr(msg) \
-fprintf(stderr, "[DEBUG] %s:%d %s\n", get_path(__FILE__).c_str(), __LINE__, to_c_str(msg))
+fprintf(stderr, "[DEBUG] %s:%d %s\n", __FILE_NAME__, __LINE__, to_c_str(msg))
+#else
+#define debug_print_cerr(msg) \
+printf("[DEBUG] %s\n", to_c_str(msg))
+#endif

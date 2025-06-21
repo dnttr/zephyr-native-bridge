@@ -49,6 +49,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${COMMON_LIBS})
 configure_tests()
 
 file(MAKE_DIRECTORY ${COLLECTED_INCLUDES_DESTINATION})
+copy_includes()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib

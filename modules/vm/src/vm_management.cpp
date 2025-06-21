@@ -40,6 +40,7 @@ std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(c
     }
 
     debug_print_ignore_formatting("[VM] Java Virtual Machine initialization complete");
+    debug_print_ignore_formatting("[VM] ═══════════════════════════════════");
 
     return std::make_unique<vm_object>(vm_data.version, jvm, jvmti, jni);
 }
