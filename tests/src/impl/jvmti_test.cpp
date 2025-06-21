@@ -20,7 +20,7 @@ using namespace znb_kit;
 struct method_proxy_fixture {
 };
 
-void ffi_example_method(JNIEnv *env) //need to look into whether jobject is needed here
+void ffi_example_method() //need to look into whether jobject is needed here, EDIT: turns out not even JNI parameter is needed. interesting, could be useful.
 {
     std::cout << "ffi_zm_open_session called" << std::endl;
 }
