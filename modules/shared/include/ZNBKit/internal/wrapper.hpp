@@ -261,5 +261,7 @@ namespace znb_kit
                                      const std::vector<jni_native_method> &methods);
 
         static void unregister_natives(JNIEnv *jni, const std::string &klass_name);
+
+        static void *get_direct_buffer(JNIEnv *jni, jobject buffer);
     };
 }

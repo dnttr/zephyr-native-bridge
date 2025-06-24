@@ -48,7 +48,6 @@ namespace znb_kit
         using ref_data = std::pair<jobject, ref_info>;
         std::vector<ref_data> refs_to_dump;
         size_t total_refs;
-
         {
             std::lock_guard lock(mutex);
 
@@ -619,5 +618,24 @@ namespace znb_kit
 
         std::lock_guard lock(tracked_native_classes_mutex);
         tracked_native_classes[klass_name] = jni_methods_for_jni_call.size();
+    }
+
+    void *wrapper::get_direct_buffer(JNIEnv *jni, const jobject buffer)
+    {
+        debug_print_cerr("[WRAPPER] Getting direct buffer address...");
+        VAR_CHECK(jni);
+        VAR_CHECK(buffer);
+
+        const auto address = jni->GetDirectBufferAddress(buffer);
+
+        if (address == nullptr)
+        {
+            debug_print_cerr("[WRAPPER] Cannot get direct buffer address");
+            throw std::runtime_error("Cannot get direct buffer address");
+        }
+
+        debug_print_cerr("[WRAPPER] Direct buffer address: " + std::to_string(reinterpret_cast<uintptr_t>(address)));
+
+        return address;
     }
 }
