@@ -34,10 +34,10 @@ namespace znb_kit
         {
             int version = JNI_VERSION_1_2;
 
-            std::optional<std::string> classpath;
+            std::optional<std::vector<std::string>> classpath;
         };
 
-        static std::unique_ptr<vm_object> create_and_wrap_vm(const std::string &classpath);
+        static std::unique_ptr<vm_object> create_and_wrap_vm(const std::optional<std::vector<std::string>> &classpath);
 
         static std::unique_ptr<vm_object> create_and_wrap_vm(const vm_data &vm_data,
                                                              std::optional<jvmti_data> jvmti_data);

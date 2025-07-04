@@ -13,7 +13,10 @@ int main(const int argc, char *argv[])
 
     debug_print_ignore_formatting("--------> RUNNING TESTS <--------");
 
-    vm = vm_management::create_and_wrap_vm(ZNI_JAR_PATH);
+    std::vector<std::string> args;
+    args.emplace_back(ZNI_JAR_PATH);
+
+    vm = vm_management::create_and_wrap_vm(args);
 
     const int out = session.run(argc, argv);
 

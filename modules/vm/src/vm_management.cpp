@@ -6,7 +6,14 @@
 
 #include "ZNBKit/debug.hpp"
 
-std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(const std::string &classpath)
+#ifdef _WIN32
+#define SEPARATOR ";"
+#else
+#define SEPARATOR ":"
+#endif
+
+std::unique_ptr<znb_kit::vm_object> znb_kit::vm_management::create_and_wrap_vm(
+    const std::optional<std::vector<std::string>> &classpath)
 {
     vm_data vm_data;
     vm_data.version = JNI_VERSION_1_8;
@@ -112,18 +119,36 @@ std::pair<JavaVM *, JNIEnv *> znb_kit::vm_management::create_vm(const vm_data &v
         debug_print_ignore_formatting("[VM] ═══════════════════════════════════");
         debug_print_ignore_formatting("[VM] Configuring classpath for file-based class loading");
 
-        const auto classpath = vm_data.classpath.value();
-
-        if (classpath.empty() || !std::filesystem::exists(classpath))
+        if (vm_data.classpath != std::nullopt)
         {
-            throw std::invalid_argument("Unable to determine classpath. [" + classpath + "]");
+            std::string value;
+
+            if (vm_data.classpath.value().empty())
+            {
+                throw std::invalid_argument("Classpath is empty.");
+            }
+
+            const auto available = static_cast<int>(vm_data.classpath.value().size());
+
+            for (std::string_view path : vm_data.classpath.value())
+            {
+                value.append(path);
+
+                if (available > 1) {
+                    value.append(SEPARATOR);
+                }
+            }
+
+            classpath_option = "-Djava.class.path=" + value;
+
+            options[0].optionString = const_cast<char *>(classpath_option.c_str());
+
+            debug_print_ignore_formatting("[VM] Classpath configured: " + value);
         }
-
-        classpath_option = "-Djava.class.path=" + classpath;
-
-        options[0].optionString = const_cast<char *>(classpath_option.c_str());
-
-        debug_print_ignore_formatting("[VM] Classpath configured: " + classpath);
+        else
+        {
+            throw std::invalid_argument("Classpath is not set.");
+        }
     }
 
     vm_args.version = vm_data.version;
