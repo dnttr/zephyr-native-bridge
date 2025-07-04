@@ -61,7 +61,7 @@ namespace znb_kit
 
         return str;
     }
-
+    
     void delete_references(JNIEnv *env, const std::vector<jobject> &references)
     {
         for (const auto &reference : references)

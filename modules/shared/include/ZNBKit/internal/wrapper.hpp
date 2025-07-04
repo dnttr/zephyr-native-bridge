@@ -199,6 +199,7 @@ namespace znb_kit
     class wrapper
     {
         static std::unordered_map<std::string, size_t> tracked_native_classes;
+        static std::vector<jstring> tracked_strings;
         static std::mutex tracked_native_classes_mutex;
 
     public:
@@ -230,6 +231,12 @@ namespace znb_kit
 
         static jmethodID get_method(JNIEnv *jni, const std::string &name, const std::string &method,
                                     const std::string &signature, bool is_static);
+
+        static jobject get_string(JNIEnv *jni, const std::string &str);
+
+        static void remove_string(JNIEnv *jni, const jobject &string);
+
+        static std::string get_string(JNIEnv *jni, const jstring &string, bool release = true);
 
         static jobject invoke_object_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
                                             const jmethodID &method_id, const std::vector<jvalue> &parameters);

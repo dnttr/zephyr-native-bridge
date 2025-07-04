@@ -344,6 +344,47 @@ namespace znb_kit
         return method_id;
     }
 
+    jobject wrapper::get_string(JNIEnv *jni, const std::string &str) //can be empty
+    {
+        VAR_CHECK(jni);
+
+        auto new_str = reinterpret_cast<jobject>(jni->NewStringUTF(str.c_str()));
+        VAR_CHECK(new_str);
+        EXCEPT_CHECK(jni);
+
+        return add_local_ref(jni, new_str, __FILE__, __LINE__, __func__);
+    }
+
+    void wrapper::remove_string(JNIEnv *jni, const jobject &string)
+    {
+        VAR_CHECK(jni);
+        VAR_CHECK(string);
+
+        remove_local_ref(jni, string);
+    }
+
+    std::string wrapper::get_string(JNIEnv *jni, const jstring &string, const bool release)
+    {
+        const char *key = jni->GetStringUTFChars(string, nullptr);
+
+        EXCEPT_CHECK(jni);
+
+        if (key == nullptr)
+        {
+            debug_print("get_string() is unable to get UTF string");
+            return {};
+        }
+
+        std::string str(key);
+
+        if (release)
+        {
+            jni->ReleaseStringUTFChars(string, key);
+        }
+
+        return str;
+    }
+
     jobject wrapper::invoke_object_method(JNIEnv *jni, const jclass &klass, const jobject &instance,
                                           const jmethodID &method_id, const std::vector<jvalue> &parameters)
     {

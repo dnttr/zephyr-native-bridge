@@ -75,5 +75,12 @@ TEST_CASE_METHOD(method_proxy_fixture, "JVMTI method mapping", "[jvmti]")
 
         std::vector<jvalue> parameters;
         m_v.invoke(klass_instance.get_object(), parameters);
+
+        auto v = wrapper::get_string(jni_env, "giga");
+        auto str = get_string(jni_env, reinterpret_cast<jstring>(v));
+
+        wrapper::remove_string(jni_env, v);
+
+        std::cout << str << std::endl;
     }
 }
