@@ -44,7 +44,7 @@ namespace znb_kit
 
         static std::unique_ptr<vm_object> wrap_vm(JavaVM *jvm, std::optional<jvmti_data> jvmti_data);
 
-        static void cleanup_vm(JavaVM *vm);
+        static void cleanup_vm(const vm_object *vm);
 
     private:
         static jvmtiCapabilities get_capabilities(const jvmtiEnv *jvmti, jvmti_data data);

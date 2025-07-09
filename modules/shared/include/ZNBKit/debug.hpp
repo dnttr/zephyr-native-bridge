@@ -31,21 +31,6 @@ const char *to_c_str(const T &msg)
     }
 }
 
-#ifdef DEBUG
-#define debug_print(msg) \
-printf("[DEBUG] %s:%d %s\n", get_path(__FILE__).c_str(), __LINE__, to_c_str(msg))
-#else
-#define debug_print(msg) \
-printf("[DEBUG] %s\n", to_c_str(msg))
-#endif
-
-#define debug_print_ignore_formatting(msg) \
-printf("[DEBUG] %s\n", to_c_str(msg))
-
-#ifdef SHOULD_DISPLAY
-#define debug_print_cerr(msg) \
-fprintf(stderr, "[DEBUG] %s:%d %s\n", __FILE_NAME__, __LINE__, to_c_str(msg))
-#else
-#define debug_print_cerr(msg) \
-fprintf(stderr, "[DEBUG] %s\n", to_c_str(msg))
-#endif
+#define debug_print(msg) do { } while (0)
+#define debug_print_ignore_formatting(msg) do { } while (0)
+#define debug_print_cerr(msg) do { } while (0)

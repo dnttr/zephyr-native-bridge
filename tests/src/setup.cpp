@@ -20,7 +20,5 @@ int main(const int argc, char *argv[])
 
     const int out = session.run(argc, argv);
 
-    vm_management::cleanup_vm(vm->get_owner());
-
     return out;
 }

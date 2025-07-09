@@ -35,15 +35,6 @@ namespace znb_kit
             this->owner = reinterpret_cast<jclass>(wrapper::add_global_ref(jni, owner));
         }
 
-        ~klass_signature()
-        {
-            if (owner != nullptr && jni != nullptr)
-            {
-                wrapper::remove_global_ref(jni, owner);
-                owner = nullptr;
-            }
-        }
-
         klass_signature(const klass_signature &other) : jni(other.jni)
         {
             if (other.owner)

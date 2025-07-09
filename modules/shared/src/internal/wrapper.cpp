@@ -679,4 +679,31 @@ namespace znb_kit
 
         return address;
     }
+
+    void wrapper::remove_all_refs(JNIEnv *jni)
+    {
+        for (const auto &ref : local_refs)
+        {
+            try
+            {
+                remove_local_ref(jni, ref);
+            }
+            catch (...)
+            {
+                debug_print_cerr("Exception while deleting local ref during cleanup");
+            }
+        }
+
+        for (const auto &ref : global_tracker::global_refs)
+        {
+            try
+            {
+                remove_global_ref(jni, ref);
+            }
+            catch (...)
+            {
+                debug_print_cerr("Exception while deleting global ref during cleanup");
+            }
+        }
+    }
 }
